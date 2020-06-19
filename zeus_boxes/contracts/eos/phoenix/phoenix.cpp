@@ -16,8 +16,18 @@ void phoenix::check_running() {
   check(!g.paused, "contract is currently under maintenance. Check back soon");
 }
 
-void phoenix::regaccount_hook(const regaccount_action &action) {
+void phoenix::signup(const name &vaccount, const eosio::public_key &pubkey) {
   check_running();
+  require_auth(get_self());
+
+  vkeys_t vkeys_table(get_self(), get_self().value, 1024, 64, VACCOUNTS_SHARD_PINNING,
+                      false, VACCOUNTS_DELAYED_CLEANUP);
+  auto existing = vkeys_table.find(vaccount.value);
+  eosio::check(existing == vkeys_table.end(), "vaccount already exists");
+  vkeys_table.emplace(get_self(), [&](auto &new_key) {
+    new_key.pubkey = pubkey;
+    new_key.vaccount = vaccount;
+  });
 
   uint32_t day_identifier = get_day_identifier();
   limits limit = _limits.get_or_default();
@@ -31,21 +41,63 @@ void phoenix::regaccount_hook(const regaccount_action &action) {
         "daily vaccount registrations exceeded");
   _limits.set(limit, get_self());
 
-  // create a user upon registering, to avoid broken states
-  const name &username = action.vaccount;
-
   // Create a record in the table if the player doesn't exist in our app yet
-  auto user = _users.find(username.value);
+  auto user = _users.find(vaccount.value);
   check(user == _users.end(), "user already exists");
-  check(
-      username.to_string().length() >= 4 && username.to_string().length() <= 12,
-      "username must be between 4 and 12 characters");
+  check(vaccount.to_string().length() >= 4 &&
+            vaccount.to_string().length() <= 12,
+        "username must be between 4 and 12 characters");
   _users.emplace(get_self(),
-                 [&](auto &new_user) { new_user.username = username; });
+                 [&](auto &new_user) { new_user.username = vaccount; });
 
-  // open PHOENIX and EOS account balances
-  open(username, WEOSDT_EXT_SYMBOL.get_symbol());
+  // open token balances
+  open(vaccount, WEOSDT_EXT_SYMBOL.get_symbol());
 }
+
+void phoenix::login(const name &vaccount, const eosio::public_key &pubkey) {
+  check_running();
+  require_auth(get_self());
+
+  vkeys_t vkeys_table(get_self(), get_self().value, 1024, 64, VACCOUNTS_SHARD_PINNING,
+                      false, VACCOUNTS_DELAYED_CLEANUP);
+  auto itr = vkeys_table.find(vaccount.value);
+  eosio::check(itr != vkeys_table.end(), "vaccount does not exist");
+  vkeys_table.modify(itr, get_self(), [&](auto &new_key) {
+    new_key.pubkey = pubkey;
+  });
+}
+
+// void phoenix::regaccount_hook(const regaccount_action &action) {
+//   check_running();
+
+//   uint32_t day_identifier = get_day_identifier();
+//   limits limit = _limits.get_or_default();
+//   if (limit.day_identifier == day_identifier) {
+//     limit.vaccounts_created_today++;
+//   } else {
+//     limit.day_identifier = day_identifier;
+//     limit.vaccounts_created_today = 1;
+//   }
+//   check(limit.vaccounts_created_today <=
+//   limit.max_vaccount_creations_per_day,
+//         "daily vaccount registrations exceeded");
+//   _limits.set(limit, get_self());
+
+//   // create a user upon registering, to avoid broken states
+//   const name &username = action.vaccount;
+
+//   // Create a record in the table if the player doesn't exist in our app yet
+//   auto user = _users.find(username.value);
+//   check(user == _users.end(), "user already exists");
+//   check(
+//       username.to_string().length() >= 4 && username.to_string().length() <=
+//       12, "username must be between 4 and 12 characters");
+//   _users.emplace(get_self(),
+//                  [&](auto &new_user) { new_user.username = username; });
+
+//   // open token balances
+//   open(username, WEOSDT_EXT_SYMBOL.get_symbol());
+// }
 
 void phoenix::setlimits(const uint32_t &max_vaccount_creations_per_day) {
   require_auth(get_self());
@@ -76,7 +128,8 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
 
   // create VPHOENIX and VEOS
   const auto max_weosdt_supply =
-      asset(170'000'000 * 1'000'000'000, WEOSDT_EXT_SYMBOL.get_symbol());  // 10 billion, same as EOS
+      asset(170'000'000 * 1'000'000'000,
+            WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
   token::create_action create(get_self(), {get_self(), "active"_n});
   create.send(get_self(), max_weosdt_supply);
   token::issue_action issue(get_self(), {get_self(), "active"_n});
@@ -303,7 +356,8 @@ void phoenix::withdraw(withdraw_payload payload) {
         "withdrawal eos account does not exist");
 
   check(payload.quantity.symbol.is_valid(), "invalid quantity");
-  check(payload.quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(), "invalid token symbol");
+  check(payload.quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
+        "invalid token symbol");
   check(payload.quantity.amount > 0, "amount must be positive");
 
   // burn: update virtual token balance: "from" -> "phoenix"
@@ -316,7 +370,7 @@ void phoenix::withdraw(withdraw_payload payload) {
 }
 
 void phoenix::on_transfer(eosio::name from, eosio::name to,
-                            eosio::asset quantity, std::string memo) {
+                          eosio::asset quantity, std::string memo) {
   check_running();
   // sending EOS, do nothing
   if (from == get_self() || from == name("eosio.stake")) {
@@ -324,11 +378,13 @@ void phoenix::on_transfer(eosio::name from, eosio::name to,
   }
 
   // only care about WEOSDT transfers
-  if(get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract()) return;
+  if (get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract())
+    return;
 
   check(to == get_self(), "contract is not involved in this transfer");
   check(quantity.symbol.is_valid(), "invalid quantity");
-  check(quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(), "invalid token symbol");
+  check(quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
+        "invalid token symbol");
 
   vector<string> parsed_memo = parse_memo(memo);
   check(parsed_memo.size() == 2, "invalid memo");
@@ -360,9 +416,10 @@ void phoenix::pledge(pledge_payload payload) {
     upsert_pledge_relations(payload, pledge_id);
   } else {
     const auto &tos = pledges_from->tos;
-    const auto &pair_itr = std::find_if(
-        tos.begin(), tos.end(),
-        [&](const name_pledge_pair &p) { return p.name == payload.to; });
+    const auto &pair_itr =
+        std::find_if(tos.begin(), tos.end(), [&](const name_pledge_pair &p) {
+          return p.name == payload.to;
+        });
     if (pair_itr == tos.end()) {
       const uint64_t pledge_id = create_pledge(payload);
       upsert_pledge_relations(payload, pledge_id);
@@ -422,15 +479,6 @@ void phoenix::renewpledge(renewpledge_payload payload) {
   const auto cycle_end = pledge->cycle_start + pledge->cycle_us;
   check(eosio::current_time_point() > cycle_end,
         "current pledge is still running");
-
-  // const auto pledger = check_user(pledge->from);
-  // const required_quantity = decimal_to_asset(pledge->next_usd_value);
-
-  // // check if user actually has that amount
-  // const auto pledger_balance =
-  //     phoenix::get_balance(p.from, WEOSDT_EXT_SYMBOL.get_symbol());
-  //   check(pledger_balance >= required_quantity, "not enough funds for the subscription.");
-
 
   // update pledge info from new cycle
   _pledges.modify(pledge, get_self(), [&](auto &p) {
@@ -499,9 +547,10 @@ void phoenix::upsert_pledge_relations(const pledge_payload &payload,
     });
   } else {
     const auto &tos = pledges_from->tos;
-    const auto &pair_itr = std::find_if(
-        tos.begin(), tos.end(),
-        [&](const name_pledge_pair &p) { return p.name == payload.to; });
+    const auto &pair_itr =
+        std::find_if(tos.begin(), tos.end(), [&](const name_pledge_pair &p) {
+          return p.name == payload.to;
+        });
     if (pair_itr == tos.end()) {
       _pledges_from.modify(pledges_from, get_self(), [&](auto &p) {
         p.tos.emplace_back(name_pledge_pair{payload.to, pledge_id});
@@ -533,9 +582,20 @@ void phoenix::pay_pledge(const name &payer, const uint64_t &pledge_id) {
   const auto &pledge = _pledges.find(pledge_id);
   check(pledge != _pledges.end(), "pledge does not exist (pay_pledge)");
 
+  auto quantity = pledge->weosdt_quantity;
+  auto fees = asset(FEES_PERCENTAGE * quantity.amount, quantity.symbol);
   // update user WEOSDT balance
-  if (pledge->weosdt_quantity.amount > 0) {
-    _transfer(payer, pledge->to, pledge->weosdt_quantity);
+  if ((quantity - fees).amount > 0) {
+    _transfer(payer, pledge->to, quantity - fees);
+  }
+  if (fees.amount > 0) {
+    check(is_account(FEES_ACCOUNT), "fee account does not exist");
+    // burn vfees
+    _transfer(payer, PHOENIX_VACCOUNT, fees);
+    token::transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
+                                           {get_self(), "active"_n});
+    // send real token "self" -> "to"
+    withdraw_action.send(get_self(), FEES_ACCOUNT, fees, "subscription fees");
   }
 
   if (pledge->autorenew) {
@@ -592,7 +652,6 @@ void phoenix::testreset(uint64_t count) {
     _posts_keys.clear();
   }
 
-
   {
     auto raw_table = follows_from_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
@@ -610,7 +669,6 @@ void phoenix::testreset(uint64_t count) {
     clear_table(raw_table);
     _pledges.clear();
   }
-
 
   {
     auto raw_table = pledges_from_table_abi(get_self(), get_self().value);
@@ -641,23 +699,22 @@ void phoenix::testreset(uint64_t count) {
 // EOSIO_DISPATCH_SVC_TRX(CONTRACT_NAME(), (login)(renewpledge))
 extern "C" {
 void apply(uint64_t receiver, uint64_t code, uint64_t action) {
-  if (code == WEOSDT_EXT_SYMBOL.get_contract().value && action == "transfer"_n.value) {
+  if (code == WEOSDT_EXT_SYMBOL.get_contract().value &&
+      action == "transfer"_n.value) {
     eosio::execute_action(eosio::name(receiver), eosio::name(code),
                           &CONTRACT_NAME()::on_transfer);
   } else if (receiver == code) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(),
-                            (create)(issue)(transfer))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (create)(issue)(transfer))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (init)(pause)(renewpledge))
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (testreset))
 #endif
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (regaccount)(xdcommit)(xvinit))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xsignal))
-      default:
-        check(false,
-              "unrecognized internal action: " + name(action).to_string());
+    default:
+      check(false, "unrecognized internal action: " + name(action).to_string());
     }
   }
   eosio_exit(0);

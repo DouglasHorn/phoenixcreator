@@ -36,8 +36,8 @@ using namespace eosio;
 
 static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9), name("weosdttokens")};
 static const auto PHOENIX_VACCOUNT = "phoenix"_n;
-static const auto PHOENIXSWAP_ACCOUNT = "phoenixswaps"_n;
-
+static const double FEES_PERCENTAGE = 0.02;
+static const name FEES_ACCOUNT = name("waxmeetup11");
 
 CONTRACT_START()
 private:
@@ -350,6 +350,8 @@ struct timer_payload {
 
 ACTION init(eosio::public_key phoenix_vaccount_pubkey);
 ACTION setlimits(const uint32_t &max_vaccount_creations_per_day);
+ACTION signup(const name& vaccount, const eosio::public_key& pubkey);
+ACTION login(const name& vaccount, const eosio::public_key& pubkey);
 ACTION pause(bool pause);
 ACTION updateuser(const updateuser_payload &payload);
 ACTION updatetiers(const updatetiers_payload &payload);
