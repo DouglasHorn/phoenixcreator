@@ -21,7 +21,7 @@ void diff_vectors(std::vector<T> &current, const std::vector<T> &add,
   }
 }
 
-inline std::vector<std::string> parse_memo(const std::string& memo) {
+std::vector<std::string> parse_memo(const std::string& memo) {
   std::vector<std::string> results;
   auto end = memo.cend();
   auto start = memo.cbegin();
@@ -37,11 +37,11 @@ inline std::vector<std::string> parse_memo(const std::string& memo) {
   return results;
 }
 
-inline double asset_to_decimal(const eosio::asset& quantity) {
+double asset_to_decimal(const eosio::asset& quantity) {
   return (double)quantity.amount / pow(10, quantity.symbol.precision());
 }
 
-inline asset decimal_to_asset(const double& value, const eosio::symbol& symbol) {
+asset decimal_to_asset(const double& value, const eosio::symbol& symbol) {
   return {static_cast<int64_t>(value * pow(10, symbol.precision())), symbol};
 }
 

@@ -1,0 +1,130 @@
+---
+dev:
+  chain_id: cf057bbfb72640471fd910bcb67639c22df9f92470936cddc1ade0e2f2e7dc4f
+  node_endpoint: http://localhost:8888
+  accounts_manager: eosio # account signing the new_account actions (needed when creating the accounts for the first time)
+  funds_manager: eosio # account distributing tokens to accounts (liquid ones but also for staking)
+  ram_manager: eosio # account buying RAM for accounts
+
+  accounts:
+    eosio:
+      signature:
+        type: key
+        private_keys:
+          - 5KQwrPbwdL6PhXujxW37FSSQZ1JiwsST4cqQzDeyXtP79zkvFD3
+
+kylin:
+  chain_id: 5fff1dae8dc8e2fc4d5b23b2c7665c97f9e9d8edf2b6485a86ba311c25639191
+  # node_endpoint: https://kylin.eosdsp.com
+  node_endpoint: https://kylin-dsp-2.liquidapps.io
+  accounts_manager: phoenixashes
+  funds_manager: phoenixashes
+  ram_manager: phoenixashes
+
+  accounts:
+    phoenixashes:
+      signature:
+        type: scatter
+      auth:
+        owner:
+          permissions:
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+        active:
+          permissions:
+            - phoenixashes@eosio.code
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+      code: contracts/eos/phoenix/phoenix.wasm
+      abi: contracts/eos/phoenix/phoenix.abi
+      ram: 4000000
+
+    phoenixfeeds:
+      signature:
+        type: scatter
+      cpu:
+        - delegate_to: phoenixfeeds
+          amount: 50000
+      net:
+        - delegate_to: phoenixfeeds
+          amount: 10000
+      code: contracts/eos/phoenixfeed/phoenixfeed.wasm
+      abi: contracts/eos/phoenixfeed/phoenixfeed.abi
+      ram: 1000000
+      auth:
+        owner:
+          permissions:
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+        active:
+          permissions:
+            - phoenixfeeds@eosio.code
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+
+    phoenixswaps:
+      signature:
+        type: scatter
+      cpu:
+        - delegate_to: phoenixswaps
+          amount: 50000
+      net:
+        - delegate_to: phoenixswaps
+          amount: 10000
+      code: contracts/eos/phoenixswap/phoenixswap.wasm
+      abi: contracts/eos/phoenixswap/phoenixswap.abi
+      ram: 300000
+      auth:
+        owner:
+          permissions:
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+        active:
+          permissions:
+            - phoenixasheu@eosio.code
+            - phoenixswaps@eosio.code
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+
+    phoenixasheu:
+      signature:
+        type: scatter
+      auth:
+        owner:
+          permissions:
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+        active:
+          permissions:
+            - phoenixasheu@eosio.code
+            - EOS7zz1H1YUkaRWS8z4XdUHKL8q4374MEhg12N3hyXXBkfbBKJZwE
+      code: zeus_boxes/contracts/eos/phoenix/phoenix.wasm
+      abi: zeus_boxes/contracts/eos/phoenix/phoenix.abi
+      ram: 4000000
+
+mainnet:
+  chain_id: aca376f206b8fc25a6ed44dbdc66547c36c6c33e3a119ffbeaef943642f0e906
+  node_endpoint: https://eos.greymass.com:443
+  accounts_manager: mb.bank
+  funds_manager: mb.bank
+  ram_manager: mb.bank
+
+  cpu_payer:
+    account: mb.bank
+    permission: payforcpu
+    key: 5...
+    action: mb.bank@payforcpu
+
+  accounts:
+    globaloracle:
+      signature:
+        type: key
+        private_keys:
+          - 5...
+      code: contracts/eos/phoenixfeed/phoenixfeed.wasm
+      abi: contracts/eos/phoenixfeed/phoenixfeed.abi
+      auth:
+        active:
+          permissions:
+            # - globaloracle@eosio.code
+            - EOS7PRLkWpDWuiMVuMy1VX8exKp279N5Ek5Qmau7GUz81tSk3m5yC
+        ops:
+          parent: active
+          permissions:
+            - EOS866TuBzbsSfyxW6W2kQbS6SthYSD6sbUmcP1QgBcS6FVG8qrVE
+          links:
+            - globaloracle@unstuck
+

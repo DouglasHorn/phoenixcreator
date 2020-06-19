@@ -72,7 +72,7 @@ describe(`vAccounts Service Test Contract`, () => {
 
         // deploy and generate + stake DAPP tokens
         const services = [`vaccounts`, `ipfs`, `cron`]; // await loadModels("dapp-services");
-        console.log(`deploying`, phoenixCode, phoenixArtifact);
+        console.log(`deploying`, phoenixCode);
         let deployedContract = await deployer.deploy(
           phoenixArtifact,
           phoenixCode,
@@ -104,7 +104,6 @@ describe(`vAccounts Service Test Contract`, () => {
             authorization: `${phoenixCode}@active`,
         });
         console.log(a)
-        return;
 
         console.log(`registering vAccounts`);
 

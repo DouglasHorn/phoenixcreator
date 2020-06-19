@@ -33,3 +33,4 @@ zeus_boxes/start-localenv/*
 
 *.sqlite
 logs/*
+eosiac.yml
