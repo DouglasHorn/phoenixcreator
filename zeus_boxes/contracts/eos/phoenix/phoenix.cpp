@@ -635,13 +635,13 @@ void phoenix::testreset(uint64_t count) {
   {
     auto raw_table = users_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    _users.clear();
+    // _users.clear();
   }
 
   {
     auto raw_table = posts_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    _posts.clear();
+    // _posts.clear();
   }
 
   {
@@ -649,37 +649,37 @@ void phoenix::testreset(uint64_t count) {
     clear_table(raw_table);
     post_key_enc_table _posts_keys(get_self(), dsp_name.value, 1024, 64, false,
                                    false, VACCOUNTS_DELAYED_CLEANUP);
-    _posts_keys.clear();
+    // _posts_keys.clear();
   }
 
   {
     auto raw_table = follows_from_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    _follows_from.clear();
+    // _follows_from.clear();
   }
 
   {
     auto raw_table = follows_to_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    _follows_to.clear();
+    // _follows_to.clear();
   }
 
   {
     auto raw_table = pledges_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    _pledges.clear();
+    // _pledges.clear();
   }
 
   {
     auto raw_table = pledges_from_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    _pledges_from.clear();
+    // _pledges_from.clear();
   }
 
   {
     auto raw_table = pledges_to_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    _pledges_to.clear();
+    // _pledges_to.clear();
   }
 
   {
@@ -707,7 +707,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (create)(issue)(transfer))
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (init)(pause)(renewpledge))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (init)(pause)(renewpledge)(signup)(login))
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (testreset))
 #endif

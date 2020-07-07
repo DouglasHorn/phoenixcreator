@@ -33,6 +33,8 @@ module.exports = async (args) => {
     '--access-control-allow-origin=*',
     '--contracts-console',
     '--max-transaction-time=150000',
+    // standard nodes fail when uploading contract with > 500 KB
+    '--max-body-size=2097152',
     '--http-validate-host=false',
     '--http-max-response-time-ms=9999999',
     '--verbose-http-errors',

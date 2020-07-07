@@ -77,7 +77,10 @@ void phoenix::transfer(name from, name to, asset quantity, string memo) {
 
 void phoenix::open(const name& owner, const symbol& symbol) {
   check_running();
-  require_vaccount(owner);
+  // we want to open it in signup action and do not have vaccount auth
+  if(!has_auth(get_self())) {
+    require_vaccount(owner);
+  }
 
   phoenix::check_user(owner);
 

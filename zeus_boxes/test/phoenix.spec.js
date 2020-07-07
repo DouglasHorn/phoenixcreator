@@ -73,14 +73,16 @@ describe(`vAccounts Service Test Contract`, () => {
         // deploy and generate + stake DAPP tokens
         const services = [`vaccounts`, `ipfs`, `cron`]; // await loadModels("dapp-services");
         console.log(`deploying`, phoenixCode);
+
+
         let deployedContract = await deployer.deploy(
           phoenixArtifact,
           phoenixCode,
-          // {
-          //   ...getDefaultArgs(),
-          //   // up stake to circumvent RAM issues
-          //   stake: `100000.0000`
-          // }
+          {
+            ...getDefaultArgs(),
+            // up stake to circumvent RAM issues
+            stake: `10000000.0000`
+          }
         );
         console.log(`deploy done`, phoenixCode);
         for (const service of services) {
