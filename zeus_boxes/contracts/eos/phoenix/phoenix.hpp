@@ -70,10 +70,13 @@ struct user_profile_info {
   std::string headerSrc;
   std::string description;
   std::string website;
+  std::map<name, std::string> social;
+  bool explicit_content = false;
 };
 struct pledge_tier {
   std::string title;
   std::string description;
+  std::vector<std::string> benefits;
   float usd_value;
 };
 // EOS and PHOENIXbalance held in this smart contract for the vaccount user
@@ -83,6 +86,7 @@ struct pledge_tier {
 struct [[eosio::table]] user_info {
   name username;
   name linked_name = ""_n; // account of EOS name
+  name created_account = ""_n; // free WAX poenix account created by user
   user_profile_info profile_info;
   std::vector<pledge_tier> tiers;
   // as there's no support for secondary indexes on vRAM, we need to keep the
