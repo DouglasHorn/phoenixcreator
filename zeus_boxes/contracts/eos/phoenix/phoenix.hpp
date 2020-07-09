@@ -12,10 +12,10 @@
 
 #include "../dappservices/cron.hpp"
 #include "../dappservices/multi_index.hpp"
-#include "../dappservices/advanced_multi_index.hpp"
 #include "../dappservices/vaccounts.hpp"
 #include <eosio/eosio.hpp>
 #include <eosio/system.hpp>
+#include "./constants.hpp"
 
 #define DAPPSERVICES_ACTIONS()                                                 \
   XSIGNAL_DAPPSERVICE_ACTION                                                   \
@@ -33,11 +33,6 @@ using std::string;
 
 using namespace std;
 using namespace eosio;
-
-static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9), name("weosdttokens")};
-static const auto PHOENIX_VACCOUNT = "phoenix"_n;
-static const double FEES_PERCENTAGE = 0.02;
-static const name FEES_ACCOUNT = name("waxmeetup11");
 
 CONTRACT_START()
 private:
@@ -79,13 +74,10 @@ struct pledge_tier {
   std::vector<std::string> benefits;
   float usd_value;
 };
-// EOS and PHOENIXbalance held in this smart contract for the vaccount user
-// is stored in accounts table of this coldtoken contract
-// gets increased by deposits, claimpledge
-// gets decreased by withdraws, pledge cycle starts
+
 struct [[eosio::table]] user_info {
   name username;
-  name linked_name = ""_n; // account of EOS name
+  name linked_name = ""_n;     // account of EOS name
   name created_account = ""_n; // free WAX poenix account created by user
   user_profile_info profile_info;
   std::vector<pledge_tier> tiers;
@@ -195,7 +187,7 @@ struct [[eosio::table]] pledge_info {
   eosio::microseconds next_cycle_us = microseconds(0);
   // taken from subscription tier
   float next_usd_value;
-  eosio::asset next_weosdt_quantity = asset(0,  WEOSDT_EXT_SYMBOL.get_symbol());
+  eosio::asset next_weosdt_quantity = asset(0, WEOSDT_EXT_SYMBOL.get_symbol());
   /* remove the pledge after next cycle */
   bool next_delete = false;
 
@@ -289,8 +281,8 @@ struct createpost_payload {
   float decrypt_for_usd;
   std::vector<uint8_t> post_key;
   EOSLIB_SERIALIZE(createpost_payload,
-                   (expected_id)(author)(title)(content)(featured_image_url)(meta)(
-                       encrypted)(decrypt_for_usd)(post_key))
+                   (expected_id)(author)(title)(content)(featured_image_url)(
+                       meta)(encrypted)(decrypt_for_usd)(post_key))
 };
 
 struct updatepost_payload {
@@ -322,12 +314,12 @@ struct linkaccount_payload {
   EOSLIB_SERIALIZE(linkaccount_payload, (from)(account))
 };
 
-struct withdraw_payload {
-  name from;
-  name to_eos_account;
-  asset quantity;
-  EOSLIB_SERIALIZE(withdraw_payload, (from)(to_eos_account)(quantity))
-};
+// struct withdraw_payload {
+//   name from;
+//   name to_eos_account;
+//   asset quantity;
+//   EOSLIB_SERIALIZE(withdraw_payload, (from)(to_eos_account)(quantity))
+// };
 
 struct pledge_payload {
   name from;
@@ -336,8 +328,8 @@ struct pledge_payload {
   eosio::asset weosdt_quantity;
   bool autorenew = false;
   bool next_delete = false;
-  EOSLIB_SERIALIZE(pledge_payload,
-                   (from)(to)(usd_value)(weosdt_quantity)(autorenew)(next_delete))
+  EOSLIB_SERIALIZE(pledge_payload, (from)(to)(usd_value)(weosdt_quantity)(
+                                       autorenew)(next_delete))
 };
 
 struct renewpledge_payload {
@@ -354,8 +346,8 @@ struct timer_payload {
 
 ACTION init(eosio::public_key phoenix_vaccount_pubkey);
 ACTION setlimits(const uint32_t &max_vaccount_creations_per_day);
-ACTION signup(const name& vaccount, const eosio::public_key& pubkey);
-ACTION login(const name& vaccount, const eosio::public_key& pubkey);
+ACTION signup(const name &vaccount, const eosio::public_key &pubkey);
+ACTION login(const name &vaccount, const eosio::public_key &pubkey);
 ACTION pause(bool pause);
 ACTION updateuser(const updateuser_payload &payload);
 ACTION updatetiers(const updatetiers_payload &payload);
@@ -363,14 +355,14 @@ ACTION createpost(createpost_payload payload);
 ACTION updatepost(updatepost_payload payload);
 ACTION follow(follow_payload payload);
 ACTION linkaccount(linkaccount_payload payload);
-ACTION withdraw(withdraw_payload payload);
+// ACTION withdraw(withdraw_payload payload);
 ACTION pledge(pledge_payload payload);
 ACTION renewpledge(renewpledge_payload payload);
 #ifdef __TEST__
 ACTION testreset(uint64_t count);
 #endif
 void on_transfer(eosio::name from, eosio::name to, eosio::asset quantity,
-                   std::string memo);
+                 std::string memo);
 bool timer_callback(name timer, std::vector<char> payload, uint32_t seconds);
 
 // static void check_user(const name& phoenix_contract, const name& name) {
@@ -386,16 +378,11 @@ bool timer_callback(name timer, std::vector<char> payload, uint32_t seconds);
 using renewpledge_action =
     eosio::action_wrapper<"renewpledge"_n, &phoenix::renewpledge>;
 
-// we cannot read vRAM tables of other contracts, so merge everything into one
-#include "phoenixtoken.partial.hpp"
-
 public:
-VACCOUNTS_APPLY(((updateuser_payload)(updateuser))(
-    (updatetiers_payload)(updatetiers))((createpost_payload)(createpost))(
-    (updatepost_payload)(updatepost))((follow_payload)(follow))(
-    (linkaccount_payload)(linkaccount))((withdraw_payload)(withdraw))(
-    (pledge_payload)(pledge))((renewpledge_payload)(renewpledge))(
-    (transferv_payload)(transferv)))
+VACCOUNTS_APPLY(((updateuser_payload)(updateuser))((updatetiers_payload)(
+    updatetiers))((createpost_payload)(createpost))((updatepost_payload)(
+    updatepost))((follow_payload)(follow))((linkaccount_payload)(linkaccount))(
+    (pledge_payload)(pledge))((renewpledge_payload)(renewpledge)))
 
 /* helper functions */
 private:
@@ -409,6 +396,8 @@ void update_latest_posts(const uint64_t &post_id);
 void remove_from_latest_post(const uint64_t &post_id);
 void schedule_renewpledge(const pledge_info &pledge);
 void regaccount_hook(const regaccount_action &action);
+void internal_vtransfer(const eosio::name &from, const eosio::name &to,
+                        const eosio::asset &quantity, const std::string &memo);
 std::pair<eosio::asset, eosio::asset>
 get_or_throw_next_pledge_quantities(pledge_info p);
 globals get_globals() {

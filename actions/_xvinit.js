@@ -9,7 +9,7 @@ const accounts = Object.keys(env.accounts);
 
 const ROOT = accounts[0];
 
-const CONTRACT = accounts[accounts.length - 1];
+const CONTRACT = accounts[accounts.length - 2];
 
 async function action() {
   try {

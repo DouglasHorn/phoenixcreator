@@ -7,23 +7,27 @@ const { sendTransaction, env } = initEnvironment(
 
 const accounts = Object.keys(env.accounts);
 
+const TOKEN_ACCOUNT = accounts[accounts.length - 1];
 const CONTRACT_ACCOUNT = accounts[accounts.length - 2];
-console.log(CONTRACT_ACCOUNT)
+
 async function action() {
   try {
-    await sendTransaction({
-      account: CONTRACT_ACCOUNT,
-      name: `init`,
-      authorization: [
-        {
-          actor: CONTRACT_ACCOUNT,
-          permission: `active`
-        }
-      ],
-      data: {
-        phoenix_vaccount_pubkey: "EOS1111111111111111111111111111111114T1Anm",
-      }
-    });
+    await sendTransaction([
+      {
+        account: TOKEN_ACCOUNT,
+        name: `open`,
+        authorization: [
+          {
+            actor: CONTRACT_ACCOUNT,
+            permission: `active`,
+          },
+        ],
+        data: {
+          owner: `tesese`,
+          symbol: `9,WEOSDT`,
+        },
+      },
+    ]);
     process.exit(0);
   } catch (error) {
     // ignore

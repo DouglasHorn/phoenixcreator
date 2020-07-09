@@ -21,22 +21,6 @@ void diff_vectors(std::vector<T> &current, const std::vector<T> &add,
   }
 }
 
-std::vector<std::string> parse_memo(const std::string& memo) {
-  std::vector<std::string> results;
-  auto end = memo.cend();
-  auto start = memo.cbegin();
-
-  for (auto it = memo.cbegin(); it != end; ++it) {
-    if (*it == ' ') {
-      results.emplace_back(start, it);
-      start = it + 1;
-    }
-  }
-  if (start != end) results.emplace_back(start, end);
-
-  return results;
-}
-
 double asset_to_decimal(const eosio::asset& quantity) {
   return (double)quantity.amount / pow(10, quantity.symbol.precision());
 }

@@ -1,6 +1,7 @@
 #include "phoenix.hpp"
 
-#include "eosio_token.hpp"
+// #include "eosio_token.hpp"
+#include "phoenixtoken-interface.hpp"
 #include "helpers.hpp"
 
 constexpr name dsp_name = eosio::name("airdropsdac1");
@@ -51,7 +52,9 @@ void phoenix::signup(const name &vaccount, const eosio::public_key &pubkey) {
                  [&](auto &new_user) { new_user.username = vaccount; });
 
   // open token balances
-  open(vaccount, WEOSDT_EXT_SYMBOL.get_symbol());
+  phoenixtoken::open_action vopen(token_account,
+                                        {get_self(), "active"_n});
+  vopen.send(vaccount, WEOSDT_EXT_SYMBOL.get_symbol());
 }
 
 void phoenix::login(const name &vaccount, const eosio::public_key &pubkey) {
@@ -126,14 +129,17 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
   _users.emplace(get_self(),
                  [&](auto &new_user) { new_user.username = PHOENIX_VACCOUNT; });
 
-  // create VPHOENIX and VEOS
-  const auto max_weosdt_supply =
-      asset(170'000'000 * 1'000'000'000,
-            WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
-  token::create_action create(get_self(), {get_self(), "active"_n});
-  create.send(get_self(), max_weosdt_supply);
-  token::issue_action issue(get_self(), {get_self(), "active"_n});
-  issue.send(PHOENIX_VACCOUNT, max_weosdt_supply, "init");
+  phoenixtoken::open_action vopen(token_account,
+                                        {get_self(), "active"_n});
+  vopen.send(PHOENIX_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
+  // create VWEOSDT on token contract
+  // const auto max_weosdt_supply =
+  //     asset(170'000'000 * 1'000'000'000,
+  //           WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
+  // phoenixtoken::create_action create(token_account, {get_self(), "active"_n});
+  // create.send(get_self(), max_weosdt_supply);
+  // phoenixtoken::issue_action issue(token_account, {get_self(), "active"_n});
+  // issue.send(PHOENIX_VACCOUNT, max_weosdt_supply, "init");
 }
 
 void phoenix::updateuser(const updateuser_payload &payload) {
@@ -335,8 +341,8 @@ void phoenix::linkaccount(linkaccount_payload payload) {
   check_running();
   require_vaccount(payload.from);
 
-  const auto user = _users.find(payload.from.value);
-  check(user != _users.end(), "user does not exist");
+  const auto user = check_user(payload.from);
+
   if (payload.account != ""_n) {
     check(is_account(payload.account), "linked eos account does not exist");
   }
@@ -345,57 +351,12 @@ void phoenix::linkaccount(linkaccount_payload payload) {
                 [&](auto &u) { u.linked_name = payload.account; });
 }
 
-// withdraw token from vaccount to EOSIO account
-void phoenix::withdraw(withdraw_payload payload) {
-  check_running();
-  require_vaccount(payload.from);
-
-  const auto user = _users.find(payload.from.value);
-  check(user != _users.end(), "user does not exist");
-  check(is_account(payload.to_eos_account),
-        "withdrawal eos account does not exist");
-
-  check(payload.quantity.symbol.is_valid(), "invalid quantity");
-  check(payload.quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
-        "invalid token symbol");
-  check(payload.quantity.amount > 0, "amount must be positive");
-
-  // burn: update virtual token balance: "from" -> "phoenix"
-  _transfer(payload.from, PHOENIX_VACCOUNT, payload.quantity);
-  token::transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
-                                         {get_self(), "active"_n});
-  // send real token "self" -> "to"
-  withdraw_action.send(get_self(), payload.to_eos_account, payload.quantity,
-                       "Phoenix Withdraw");
-}
-
 void phoenix::on_transfer(eosio::name from, eosio::name to,
                           eosio::asset quantity, std::string memo) {
   check_running();
-  // sending EOS, do nothing
-  if (from == get_self() || from == name("eosio.stake")) {
-    return;
-  }
 
-  // only care about WEOSDT transfers
-  if (get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract())
-    return;
-
-  check(to == get_self(), "contract is not involved in this transfer");
-  check(quantity.symbol.is_valid(), "invalid quantity");
-  check(quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
-        "invalid token symbol");
-
-  vector<string> parsed_memo = parse_memo(memo);
-  check(parsed_memo.size() == 2, "invalid memo");
-  check(parsed_memo[0] == "deposit", "invalid memo 1");
-
-  const name depositor = name(parsed_memo[1]);
-  const auto user = _users.find(depositor.value);
-  check_user(depositor);
-
-  // issue virtual EOS
-  _transfer(PHOENIX_VACCOUNT, depositor, quantity);
+  // accept everything, deny WEOSDT
+  check(get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract(), "WEOSDT must be deposited to the token contract");
 }
 
 void phoenix::pledge(pledge_payload payload) {
@@ -586,16 +547,12 @@ void phoenix::pay_pledge(const name &payer, const uint64_t &pledge_id) {
   auto fees = asset(FEES_PERCENTAGE * quantity.amount, quantity.symbol);
   // update user WEOSDT balance
   if ((quantity - fees).amount > 0) {
-    _transfer(payer, pledge->to, quantity - fees);
+    internal_vtransfer(payer, pledge->to, quantity - fees, "subscription");
   }
+
   if (fees.amount > 0) {
-    check(is_account(FEES_ACCOUNT), "fee account does not exist");
-    // burn vfees
-    _transfer(payer, PHOENIX_VACCOUNT, fees);
-    token::transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
-                                           {get_self(), "active"_n});
-    // send real token "self" -> "to"
-    withdraw_action.send(get_self(), FEES_ACCOUNT, fees, "subscription fees");
+    // transfer fees to vfees account
+    internal_vtransfer(payer, PHOENIX_FEES_VACCOUNT, fees, "subscription fees");
   }
 
   if (pledge->autorenew) {
@@ -618,6 +575,12 @@ void phoenix::schedule_renewpledge(const pledge_info &pledge) {
   std::vector<char> packed_payload = eosio::pack(payload);
 
   schedule_timer(name(pledge.id), packed_payload, seconds);
+}
+
+void phoenix::internal_vtransfer(const eosio::name& from, const eosio::name& to, const eosio::asset& quantity, const std::string& memo) {
+  phoenixtoken::transfer_action vtransfer(token_account,
+                                         {get_self(), "active"_n});
+  vtransfer.send(from, to, quantity, memo);
 }
 
 #ifdef __TEST__
@@ -694,8 +657,6 @@ void phoenix::testreset(uint64_t count) {
 }
 #endif
 
-#include "phoenixtoken.cpp"
-
 // EOSIO_DISPATCH_SVC_TRX(CONTRACT_NAME(), (login)(renewpledge))
 extern "C" {
 void apply(uint64_t receiver, uint64_t code, uint64_t action) {
@@ -706,7 +667,6 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
   } else if (receiver == code) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (create)(issue)(transfer))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (init)(pause)(renewpledge)(signup)(login))
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (testreset))

@@ -9,7 +9,7 @@ const accounts = Object.keys(env.accounts);
 
 const ROOT = accounts[0];
 
-const STAKE_ACC = `phoenixashe3` // accounts[accounts.length - 1]
+const STAKE_ACC = `phoenixashe5` // accounts[accounts.length - 1]
 
 const services = [
   {
@@ -80,13 +80,14 @@ const services = [
 ];
 
 const getAmountOfDapp = service => {
-  if (
-    service.provider === `airdropsdacs` &&
-    service.service === `ipfsservice1` &&
-    service.package === `standard`
-  )
-    return `1000.0000 DAPP`;
-  else return `10.0000 DAPP`;
+  return `10.0000 DAPP`;
+  // if (
+  //   service.provider === `airdropsdacs` &&
+  //   service.service === `ipfsservice1` &&
+  //   service.package === `standard`
+  // )
+  //   return `1000.0000 DAPP`;
+  // else return `10.0000 DAPP`;
 };
 
 const PROVIDERS = [`airdropsdacs`, `heliosselene`]

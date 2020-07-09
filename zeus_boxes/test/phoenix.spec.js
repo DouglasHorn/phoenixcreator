@@ -30,12 +30,15 @@ const initHelpers = require("./phoenix.helpers");
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 let phoenixContractCodeName = "phoenix";
-const phoenixCode = "phoenixacc";
+const phoenixCode = "phoenixashe5";
+let tokenContractCodeName = "phoenixtoken";
+const tokenCode = "phoenixtokn3";
 const vAccount1 = `vaccount2`;
 const vAccount2 = `vaccount3`;
 const vAccount3 = `vaccount4`;
 const vAccountPhoenix = `phoenix`;
 let phoenixArtifact = artifacts.require(`./${phoenixContractCodeName}/`)
+let tokenArtifact = artifacts.require(`./${tokenContractCodeName}/`)
 
 const endpoint = "http://localhost:13015";
 
@@ -74,38 +77,45 @@ describe(`vAccounts Service Test Contract`, () => {
         const services = [`vaccounts`, `ipfs`, `cron`]; // await loadModels("dapp-services");
         console.log(`deploying`, phoenixCode);
 
-
-        let deployedContract = await deployer.deploy(
-          phoenixArtifact,
-          phoenixCode,
-          {
-            ...getDefaultArgs(),
-            // up stake to circumvent RAM issues
-            stake: `10000000.0000`
+        for(const [artifact, code] of [[phoenixArtifact, phoenixCode], [tokenArtifact, tokenCode]]) {
+          let deployedContract = await deployer.deploy(
+            artifact,
+            code,
+            {
+              ...getDefaultArgs(),
+              // up stake to circumvent RAM issues
+              stake: `10000000.0000`
+            }
+          );
+          console.log(`deploy done`, code);
+          for (const service of services) {
+            console.log(`allocating service "${service}"`);
+            await genAllocateDAPPTokens(deployedContract, service); // service.name
           }
-        );
-        console.log(`deploy done`, phoenixCode);
-        for (const service of services) {
-          console.log(`allocating service "${service}"`);
-          await genAllocateDAPPTokens(deployedContract, service); // service.name
         }
         console.log(`Allocating done`);
 
         // initialize vaccount service with chainId
         eosPhoenixContract = await getTestContract(phoenixCode)
+        eosTokenContract = await getTestContract(tokenCode)
         const chainId = (await rpc.get_info()).chain_id;
 
+        await eosTokenContract.create({
+          issuer: tokenCode,
+          maximum_supply: "170000000.000000000 WEOSDT"
+        }, {
+            authorization: `${tokenCode}@active`,
+        });
         await eosPhoenixContract.xvinit({
             chainid: chainId
         }, {
             authorization: `${phoenixCode}@active`,
         });
-        let a = await eosPhoenixContract.init({
+        await eosPhoenixContract.init({
           phoenix_vaccount_pubkey: `EOS1111111111111111111111111111111114T1Anm`,
         }, {
             authorization: `${phoenixCode}@active`,
         });
-        console.log(a)
 
         console.log(`registering vAccounts`);
 
@@ -115,18 +125,26 @@ describe(`vAccounts Service Test Contract`, () => {
           phoenixCode
       );
         try {
-          const res = await vaccClient.push_liquid_account_transaction(
-              phoenixCode,
-              privateWif,
-              "regaccount",
-              {
-                  vaccount: vAccount1
-              }
-          );
-          console.log(res)
-          // await regVAccount(vAccount1);
-          // await regVAccount(vAccount2);
-          // await regVAccount(vAccount3);
+          for(const vacc of [vAccount1, vAccount2, vAccount3]) {
+            await eosPhoenixContract.signup({
+              vaccount: vacc,
+              pubkey: publicKeyVAccount,
+            }, {
+                authorization: `${phoenixCode}@active`,
+            });
+            // const res = await vaccClient.push_liquid_account_transaction(
+            //     phoenixCode,
+            //     privateWif,
+            //     "regaccount",
+            //     {
+            //         vaccount: vAccount1
+            //     }
+            // );
+            console.log(res)
+            // await regVAccount(vAccount1);
+            // await regVAccount(vAccount2);
+            // await regVAccount(vAccount3);
+          }
         } catch (_err) {
           // ignore vaccount already exists error
           console.log(_err.message);
