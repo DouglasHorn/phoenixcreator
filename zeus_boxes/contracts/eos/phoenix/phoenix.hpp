@@ -259,20 +259,20 @@ phoenix(name receiver, name code, datastream<const char *> ds)
                   VACCOUNTS_DELAYED_CLEANUP) {}
 
 struct updateuser_payload {
-  name username;
+  name vaccount;
   user_profile_info new_profile_info;
-  EOSLIB_SERIALIZE(updateuser_payload, (username)(new_profile_info))
+  EOSLIB_SERIALIZE(updateuser_payload, (vaccount)(new_profile_info))
 };
 
 struct updatetiers_payload {
-  name username;
+  name vaccount;
   std::vector<pledge_tier> new_tiers;
-  EOSLIB_SERIALIZE(updatetiers_payload, (username)(new_tiers))
+  EOSLIB_SERIALIZE(updatetiers_payload, (vaccount)(new_tiers))
 };
 
 struct createpost_payload {
   uint64_t expected_id = 0;
-  name author; // account of EOS name, will be scope
+  name vaccount; // account of EOS name, will be scope
   std::vector<uint8_t> title;
   std::vector<uint8_t> content;
   std::vector<uint8_t> featured_image_url;
@@ -281,12 +281,12 @@ struct createpost_payload {
   float decrypt_for_usd;
   std::vector<uint8_t> post_key;
   EOSLIB_SERIALIZE(createpost_payload,
-                   (expected_id)(author)(title)(content)(featured_image_url)(
+                   (expected_id)(vaccount)(title)(content)(featured_image_url)(
                        meta)(encrypted)(decrypt_for_usd)(post_key))
 };
 
 struct updatepost_payload {
-  name author;
+  name vaccount;
   uint64_t id;
   std::vector<uint8_t> title;
   std::vector<uint8_t> content;
@@ -297,21 +297,21 @@ struct updatepost_payload {
   std::vector<uint8_t> post_key;
   bool delete_post = false;
   EOSLIB_SERIALIZE(updatepost_payload,
-                   (author)(id)(title)(content)(featured_image_url)(meta)(
+                   (vaccount)(id)(title)(content)(featured_image_url)(meta)(
                        encrypted)(decrypt_for_usd)(post_key)(delete_post))
 };
 
 struct follow_payload {
-  name from;
+  name vaccount;
   std::vector<name> follows;
   std::vector<name> unfollows;
-  EOSLIB_SERIALIZE(follow_payload, (from)(follows)(unfollows))
+  EOSLIB_SERIALIZE(follow_payload, (vaccount)(follows)(unfollows))
 };
 
 struct linkaccount_payload {
-  name from;
+  name vaccount;
   name account;
-  EOSLIB_SERIALIZE(linkaccount_payload, (from)(account))
+  EOSLIB_SERIALIZE(linkaccount_payload, (vaccount)(account))
 };
 
 // struct withdraw_payload {
@@ -322,20 +322,21 @@ struct linkaccount_payload {
 // };
 
 struct pledge_payload {
-  name from;
+  name vaccount;
   name to;
   double usd_value;
   eosio::asset weosdt_quantity;
   bool autorenew = false;
   bool next_delete = false;
-  EOSLIB_SERIALIZE(pledge_payload, (from)(to)(usd_value)(weosdt_quantity)(
+  EOSLIB_SERIALIZE(pledge_payload, (vaccount)(to)(usd_value)(weosdt_quantity)(
                                        autorenew)(next_delete))
 };
 
 struct renewpledge_payload {
+  name vaccount;
   name to;
   uint64_t pledge_id;
-  EOSLIB_SERIALIZE(renewpledge_payload, (to)(pledge_id))
+  EOSLIB_SERIALIZE(renewpledge_payload, (vaccount)(to)(pledge_id))
 };
 
 struct timer_payload {

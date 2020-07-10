@@ -144,8 +144,8 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
 
 void phoenix::updateuser(const updateuser_payload &payload) {
   check_running();
-  require_vaccount(payload.username);
-  auto user = check_user(payload.username);
+  require_vaccount(payload.vaccount);
+  auto user = check_user(payload.vaccount);
 
   _users.modify(user, get_self(),
                 [&](auto &u) { u.profile_info = payload.new_profile_info; });
@@ -153,8 +153,8 @@ void phoenix::updateuser(const updateuser_payload &payload) {
 
 void phoenix::updatetiers(const updatetiers_payload &payload) {
   check_running();
-  require_vaccount(payload.username);
-  auto user = check_user(payload.username);
+  require_vaccount(payload.vaccount);
+  auto user = check_user(payload.vaccount);
   check(payload.new_tiers.size() <= 5, "cannot have more than 5 tiers");
 
   _users.modify(user, get_self(),
@@ -184,8 +184,8 @@ void phoenix::remove_from_latest_post(const uint64_t &post_id) {
 
 void phoenix::createpost(createpost_payload payload) {
   check_running();
-  require_vaccount(payload.author);
-  auto user = check_user(payload.author);
+  require_vaccount(payload.vaccount);
+  auto user = check_user(payload.vaccount);
 
   globals g = get_globals();
   check(payload.expected_id == g.next_post_id, "post id mismatch");
@@ -194,7 +194,7 @@ void phoenix::createpost(createpost_payload payload) {
 
   _posts.emplace(get_self(), [&](auto &p) {
     p.id = post_id;
-    p.author = payload.author;
+    p.author = payload.vaccount;
     p.title = payload.title;
     p.content = payload.content;
     p.featured_image_url = payload.featured_image_url;
@@ -226,12 +226,12 @@ void phoenix::createpost(createpost_payload payload) {
 
 void phoenix::updatepost(updatepost_payload payload) {
   check_running();
-  require_vaccount(payload.author);
-  auto user = check_user(payload.author);
+  require_vaccount(payload.vaccount);
+  auto user = check_user(payload.vaccount);
 
   const auto post = _posts.find(payload.id);
   check(post != _posts.end(), "post does not exist for this author");
-  check(post->author == payload.author, "you are not the author of this post");
+  check(post->author == payload.vaccount, "you are not the author of this post");
 
   if (payload.delete_post) {
     _users.modify(user, get_self(), [&](auto &u) {
@@ -286,14 +286,14 @@ void phoenix::updatepost(updatepost_payload payload) {
 
 void phoenix::follow(follow_payload payload) {
   check_running();
-  require_vaccount(payload.from);
-  check_user(payload.from);
+  require_vaccount(payload.vaccount);
+  check_user(payload.vaccount);
 
   // update _follows_from
-  const auto from_follows = _follows_from.find(payload.from.value);
+  const auto from_follows = _follows_from.find(payload.vaccount.value);
   if (from_follows == _follows_from.end()) {
     _follows_from.emplace(get_self(), [&](auto &s) {
-      s.from = payload.from;
+      s.from = payload.vaccount;
       s.tos = std::vector<name>{};
       diff_vectors(s.tos, payload.follows, payload.unfollows);
     });
@@ -311,12 +311,12 @@ void phoenix::follow(follow_payload payload) {
     if (to_follows == _follows_to.end()) {
       _follows_to.emplace(get_self(), [&](auto &s) {
         s.to = follower;
-        diff_vectors(s.froms, std::vector<name>{payload.from},
+        diff_vectors(s.froms, std::vector<name>{payload.vaccount},
                      std::vector<name>{});
       });
     } else {
       _follows_to.modify(to_follows, get_self(), [&](auto &s) {
-        diff_vectors(s.froms, std::vector<name>{payload.from},
+        diff_vectors(s.froms, std::vector<name>{payload.vaccount},
                      std::vector<name>{});
       });
     }
@@ -331,7 +331,7 @@ void phoenix::follow(follow_payload payload) {
     } else {
       _follows_to.modify(to_follows, get_self(), [&](auto &s) {
         diff_vectors(s.froms, std::vector<name>{},
-                     std::vector<name>{payload.from});
+                     std::vector<name>{payload.vaccount});
       });
     }
   }
@@ -339,9 +339,9 @@ void phoenix::follow(follow_payload payload) {
 
 void phoenix::linkaccount(linkaccount_payload payload) {
   check_running();
-  require_vaccount(payload.from);
+  require_vaccount(payload.vaccount);
 
-  const auto user = check_user(payload.from);
+  const auto user = check_user(payload.vaccount);
 
   if (payload.account != ""_n) {
     check(is_account(payload.account), "linked eos account does not exist");
@@ -361,17 +361,17 @@ void phoenix::on_transfer(eosio::name from, eosio::name to,
 
 void phoenix::pledge(pledge_payload payload) {
   check_running();
-  require_vaccount(payload.from);
+  require_vaccount(payload.vaccount);
   // no need to check users here,
   // will be checked when pledge is paid and balances are adjusted
-  // check_user(payload.from);
+  // check_user(payload.vaccount);
   // check_user(payload.to);
   check(payload.weosdt_quantity.symbol.is_valid(), "invalid weosdt_quantity");
   check(payload.weosdt_quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
         "invalid token symbol for weosdt_quantity");
   check(payload.weosdt_quantity.amount > 0, "weosdt_quantity must be > 0");
 
-  const auto pledges_from = _pledges_from.find(payload.from.value);
+  const auto pledges_from = _pledges_from.find(payload.vaccount.value);
   if (pledges_from == _pledges_from.end()) {
     const uint64_t pledge_id = create_pledge(payload);
     upsert_pledge_relations(payload, pledge_id);
@@ -456,7 +456,7 @@ uint64_t phoenix::create_pledge(const pledge_payload &payload) {
   const auto id = _pledges.available_primary_key();
   const auto &new_pledge = _pledges.emplace(get_self(), [&](auto &p) {
     p.id = id;
-    p.from = payload.from;
+    p.from = payload.vaccount;
     p.to = payload.to;
     p.usd_value = asset_to_decimal(payload.weosdt_quantity);
     p.weosdt_quantity = payload.weosdt_quantity;
@@ -474,7 +474,7 @@ uint64_t phoenix::create_pledge(const pledge_payload &payload) {
     p.next_delete = false;
   });
 
-  pay_pledge(payload.from, id);
+  pay_pledge(payload.vaccount, id);
 
   return id;
 }
@@ -499,10 +499,10 @@ void phoenix::update_pledge(const pledge_payload &payload,
 
 void phoenix::upsert_pledge_relations(const pledge_payload &payload,
                                       uint64_t pledge_id) {
-  const auto pledges_from = _pledges_from.find(payload.from.value);
+  const auto pledges_from = _pledges_from.find(payload.vaccount.value);
   if (pledges_from == _pledges_from.end()) {
     _pledges_from.emplace(get_self(), [&](auto &p) {
-      p.from = payload.from;
+      p.from = payload.vaccount;
       p.tos = std::vector<name_pledge_pair>{
           name_pledge_pair{payload.to, pledge_id}};
     });
@@ -524,16 +524,16 @@ void phoenix::upsert_pledge_relations(const pledge_payload &payload,
     _pledges_to.emplace(get_self(), [&](auto &p) {
       p.to = payload.to;
       p.froms = std::vector<name_pledge_pair>{
-          name_pledge_pair{payload.from, pledge_id}};
+          name_pledge_pair{payload.vaccount, pledge_id}};
     });
   } else {
     const auto &froms = pledges_to->froms;
     const auto &pair_itr = std::find_if(
         froms.begin(), froms.end(),
-        [&](const name_pledge_pair &p) { return p.name == payload.from; });
+        [&](const name_pledge_pair &p) { return p.name == payload.vaccount; });
     if (pair_itr == froms.end()) {
       _pledges_to.modify(pledges_to, get_self(), [&](auto &p) {
-        p.froms.emplace_back(name_pledge_pair{payload.from, pledge_id});
+        p.froms.emplace_back(name_pledge_pair{payload.vaccount, pledge_id});
       });
     };
   }

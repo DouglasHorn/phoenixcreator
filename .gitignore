@@ -20,6 +20,7 @@ zeus_boxes/contracts/*
 !zeus_boxes/contracts/eos
 zeus_boxes/contracts/eos/*
 !zeus_boxes/contracts/eos/phoenix
+!zeus_boxes/contracts/eos/phoenixtoken
 
 !zeus_boxes/test
 zeus_boxes/test/*
