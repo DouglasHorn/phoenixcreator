@@ -45,7 +45,7 @@ const endpoint = "http://localhost:13015";
 
 const { runTrx, rpc } = initHelpers({ endpoint });
 
-describe(`vAccounts Service Test Contract`, () => {
+describe(`Phoenix tests`, () => {
   let selectedNetwork = getNetwork(getDefaultArgs());
   let eosPhoenixContract;
   let eosTokenContract;
@@ -88,6 +88,22 @@ describe(`vAccounts Service Test Contract`, () => {
         const chainId = (await rpc.get_info()).chain_id;
 
         try {
+          await eosPhoenixContract.xvinit(
+            {
+              chainid: chainId,
+            },
+            {
+              authorization: `${phoenixCode}@active`,
+            }
+          );
+          await eosTokenContract.xvinit(
+            {
+              host: phoenixCode,
+            },
+            {
+              authorization: `${tokenCode}@active`,
+            }
+          );
           await eosTokenContract.create(
             {
               issuer: tokenCode,
@@ -95,14 +111,6 @@ describe(`vAccounts Service Test Contract`, () => {
             },
             {
               authorization: `${tokenCode}@active`,
-            }
-          );
-          await eosPhoenixContract.xvinit(
-            {
-              chainid: chainId,
-            },
-            {
-              authorization: `${phoenixCode}@active`,
             }
           );
           await eosPhoenixContract.init(
@@ -113,7 +121,7 @@ describe(`vAccounts Service Test Contract`, () => {
               authorization: `${phoenixCode}@active`,
             }
           );
-          console.log(`issuing`)
+          console.log(`issuing`);
           await eosTokenContract.issue(
             {
               to: vAccountPhoenix,
@@ -128,12 +136,6 @@ describe(`vAccounts Service Test Contract`, () => {
           console.warn(`initialization went wrong`, err.message);
         }
 
-        await readVRAMData({
-          contract: tokenCode,
-          key: `WEOSDT`,
-          table: `accounts`,
-          scope: vAccountPhoenix,
-        });
         console.log(`registering vAccounts`);
 
         const dappClient = await createClient({
@@ -155,7 +157,7 @@ describe(`vAccounts Service Test Contract`, () => {
             );
           }
 
-          console.log(`tryin to read vram data`);
+          console.log(`trying to read vram data`);
           let tableRes = await readVRAMData({
             contract: phoenixCode,
             key: vAccount1,
@@ -169,47 +171,6 @@ describe(`vAccounts Service Test Contract`, () => {
           // ignore vaccount already exists error
           console.warn(`vaccount signup failed`, _err.message);
         }
-
-        // const eosToken = await getLocalDSPEos("eosio.token", getDefaultArgs());
-        // eosTokenContract = await eosToken.contract("eosio.token");
-
-        // try {
-        //   await eosTokenContract.create("eosio.token", `19876543200.0000 EOS`, {
-        //     authorization: [`eosio.token@active`],
-        //   });
-        //   await eosTokenContract.issue(
-        //     {
-        //       to: `eosio.token`,
-        //       quantity: "19876543200.0000 EOS",
-        //       memo: ``,
-        //     },
-        //     {
-        //       authorization: [`eosio.token@active`],
-        //     }
-        //   );
-
-        //   // distribute EOS tokens to test accounts
-        //   testAccountKeys = await Promise.all(
-        //     testAccountNames.map((name) => getCreateAccount(name))
-        //   );
-        //   await Promise.all(
-        //     testAccountNames.map(async (name) => {
-        //       return eosTokenContract.transfer(
-        //         {
-        //           from: `eosio.token`,
-        //           to: name,
-        //           quantity: "10.0000 EOS",
-        //           memo: ``,
-        //         },
-        //         {
-        //           authorization: `eosio.token@active`,
-        //         }
-        //       );
-        //     })
-        //   );
-        // } catch (error) {
-        //   console.warn(`Token distribution went wrong`, error.message);
-        // }
 
         done();
       } catch (e) {
@@ -395,25 +356,22 @@ describe(`vAccounts Service Test Contract`, () => {
           {
             from: vAccountPhoenix,
             to: vAccount1,
-            quantity: "20.987654320 WEOSDT",
+            quantity: "20.987654321 WEOSDT",
             memo: ``,
           },
           {
             authorization: [`${tokenCode}@active`],
           }
         );
-        console.log(`WEODST 133`);
 
         let tableRes = await readVRAMData({
           contract: tokenCode,
-          key: `92652432213335`,
+          key: `WEOSDT`,
           table: `accounts`,
           scope: vAccount1,
-          keytype: `number`,
-          keysize: 64,
+          keytype: `symbol`,
         });
-        console.log(`accounts row`, tableRes.row);
-        assert(tableRes.row.balance === `20.987654320 WEOSDT`, "wrong balance");
+        assert(tableRes.row.balance === `20.987654321 WEOSDT`, "wrong balance");
 
         await vaccClient.push_liquid_account_transaction(
           tokenCode,
@@ -422,19 +380,19 @@ describe(`vAccounts Service Test Contract`, () => {
           {
             vaccount: vAccount1,
             to: vAccount2,
-            quantity: "10.987654320 WEOSDT",
+            quantity: "10.987654321 WEOSDT",
             memo: ``,
           }
         );
 
         tableRes = await readVRAMData({
-          contract: phoenixCode,
+          contract: tokenCode,
           key: `WEOSDT`,
           table: `accounts`,
           scope: vAccount2,
+          keytype: `symbol`,
         });
-        console.log(`accounts row`, tableRes.row);
-        assert(tableRes.row.balance === `10.987654320 WEOSDT`, "wrong balance");
+        assert(tableRes.row.balance === `10.987654321 WEOSDT`, "wrong balance");
 
         done();
       } catch (e) {

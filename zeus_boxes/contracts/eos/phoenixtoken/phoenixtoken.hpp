@@ -1,24 +1,27 @@
 #pragma once
 
-#define __TEST__
 #define USE_ADVANCED_IPFS
 // #define USE_IPFS_WARMUPROW
+#define VACCOUNTS_SUBSCRIBER
 
 #define VACCOUNTS_DELAYED_CLEANUP 0
 
 #include "../dappservices/advanced_multi_index.hpp"
 #include "../dappservices/multi_index.hpp"
-// #include "../dappservices/vaccounts.hpp"
-#include <eosio/eosio.hpp>
-#include <eosio/system.hpp>
+#include "../dappservices/vaccounts.hpp"
 #include "../phoenix/constants.hpp"
 #include "./phoenix-interface.hpp"
+#include <eosio/eosio.hpp>
+#include <eosio/system.hpp>
 
 #define DAPPSERVICES_ACTIONS()                                                 \
   XSIGNAL_DAPPSERVICE_ACTION                                                   \
-  IPFS_DAPPSERVICE_ACTIONS
+  IPFS_DAPPSERVICE_ACTIONS                                                     \
+  VACCOUNTS_DAPPSERVICE_ACTIONS
 
-#define DAPPSERVICE_ACTIONS_COMMANDS() IPFS_SVC_COMMANDS()
+#define DAPPSERVICE_ACTIONS_COMMANDS()                                         \
+  IPFS_SVC_COMMANDS()                                                          \
+  VACCOUNTS_SVC_COMMANDS()
 
 #define CONTRACT_NAME() phoenixtoken
 
@@ -40,11 +43,11 @@ typedef eosio::singleton<"globals"_n, globals> globals_sgt;
 globals_sgt _globals;
 
 struct transferv_payload {
-  name from;
+  name vaccount;
   name to;
   asset quantity;
   string memo;
-  EOSLIB_SERIALIZE(transferv_payload, (from)(to)(quantity)(memo))
+  EOSLIB_SERIALIZE(transferv_payload, (vaccount)(to)(quantity)(memo))
 };
 
 ACTION create(name issuer, asset maximum_supply);
@@ -55,7 +58,8 @@ ACTION transfer(name from, name to, asset quantity, string memo);
 ACTION transferv(transferv_payload payload);
 ACTION open(const name &owner, const symbol &symbol);
 // ACTION withdraw(const name& owner, const symbol& symbol);
-void on_transfer(const eosio::name& from, const eosio::name& to, const eosio::asset& quantity, const std::string& memo);
+void on_transfer(const eosio::name &from, const eosio::name &to,
+                 const eosio::asset &quantity, const std::string &memo);
 
 inline asset get_supply(symbol_code sym) const;
 inline asset get_balance(name owner, symbol sym) const;
@@ -102,6 +106,8 @@ void check_running();
 public:
 phoenixtoken(name receiver, name code, datastream<const char *> ds)
     : contract(receiver, code, ds), _globals(receiver, receiver.value) {}
+
+VACCOUNTS_APPLY(((transferv_payload)(transferv)))
 
 private:
 globals get_globals() {

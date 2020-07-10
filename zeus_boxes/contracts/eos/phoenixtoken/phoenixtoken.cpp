@@ -146,10 +146,10 @@ void phoenixtoken::_transfer(const name &from, const name &to,
 
 void phoenixtoken::transferv(transferv_payload payload) {
   check_running();
-  // require_vaccount(payload.from);
+  require_vaccount(payload.vaccount);
 
   phoenixtoken::transfer_action transfer(get_self(), {get_self(), "active"_n});
-  transfer.send(payload.from, payload.to, payload.quantity, payload.memo);
+  transfer.send(payload.vaccount, payload.to, payload.quantity, payload.memo);
 }
 
 void phoenixtoken::add_balance(name owner, asset value) {
@@ -269,10 +269,10 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (create)(issue)(transfer)(open))
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit)(xvinit))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xsignal))
     default:
-      check(false, "unrecognized internal action: " + name(action).to_string());
+      check(false, "unrecognized internal token action: " + name(action).to_string());
     }
   }
   eosio_exit(0);

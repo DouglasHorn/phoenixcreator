@@ -671,7 +671,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (testreset))
 #endif
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit)(xvinit))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit)(xvinit)(xvauth))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xsignal))
     default:
       check(false, "unrecognized internal action: " + name(action).to_string());
