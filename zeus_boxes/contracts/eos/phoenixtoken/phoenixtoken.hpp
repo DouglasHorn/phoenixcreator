@@ -12,6 +12,7 @@
 #include <eosio/eosio.hpp>
 #include <eosio/system.hpp>
 #include "../phoenix/constants.hpp"
+#include "./phoenix-interface.hpp"
 
 #define DAPPSERVICES_ACTIONS()                                                 \
   XSIGNAL_DAPPSERVICE_ACTION                                                   \
@@ -82,7 +83,13 @@ TABLE currency_stats {
 
 typedef dapp::multi_index<"accounts"_n, account> accounts_t;
 typedef eosio::multi_index<".accounts"_n, account> accounts_t_v_abi;
-typedef eosio::multi_index<"accounts"_n, dapp::shardbucket> accounts_t_abi;
+// may NOT be dapp::shardbucket otherwise precision 253 should be <= 18 errors
+TABLE shardbucket {
+  std::vector<char> shard_uri;
+  uint64_t shard;
+  uint64_t primary_key() const { return shard; }
+};
+typedef eosio::multi_index<"accounts"_n, shardbucket> accounts_t_abi;
 
 typedef eosio::multi_index<"stat"_n, currency_stats> stats;
 
@@ -101,47 +108,5 @@ globals get_globals() {
   globals g = _globals.get_or_default(globals());
   return g;
 }
-
-/**
- * User
- */
-struct user_profile_info {
-  std::string displayName;
-  std::string logoSrc;
-  std::string headerSrc;
-  std::string description;
-  std::string website;
-  std::map<name, std::string> social;
-  bool explicit_content = false;
-};
-struct pledge_tier {
-  std::string title;
-  std::string description;
-  std::vector<std::string> benefits;
-  float usd_value;
-};
-
-struct [[eosio::table]] user_info {
-  name username;
-  name linked_name = ""_n;     // account of EOS name
-  name created_account = ""_n; // free WAX poenix account created by user
-  user_profile_info profile_info;
-  std::vector<pledge_tier> tiers;
-  // as there's no support for secondary indexes on vRAM, we need to keep the
-  // "foreign key" relationships in the user
-  std::vector<uint64_t> post_indexes = std::vector<uint64_t>{};
-
-  auto primary_key() const { return username.value; }
-};
-
-typedef dapp::multi_index<name("users"), user_info> users_table;
-typedef eosio::multi_index<".users"_n, user_info> users_table_v_abi;
-TABLE shardbucket {
-  std::vector<char> shard_uri;
-  uint64_t shard;
-  uint64_t primary_key() const { return shard; }
-};
-typedef eosio::multi_index<"users"_n, shardbucket> users_table_abi;
-
 }
 ;

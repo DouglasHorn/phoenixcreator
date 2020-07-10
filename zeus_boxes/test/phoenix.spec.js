@@ -91,7 +91,7 @@ describe(`vAccounts Service Test Contract`, () => {
           await eosTokenContract.create(
             {
               issuer: tokenCode,
-              maximum_supply: "1000000000.0000 AIRZ",
+              maximum_supply: "17000000.000000000 WEOSDT",
             },
             {
               authorization: `${tokenCode}@active`,
@@ -105,19 +105,19 @@ describe(`vAccounts Service Test Contract`, () => {
               authorization: `${phoenixCode}@active`,
             }
           );
-          // await eosPhoenixContract.init(
-          //   {
-          //     phoenix_vaccount_pubkey: `EOS1111111111111111111111111111111114T1Anm`,
-          //   },
-          //   {
-          //     authorization: `${phoenixCode}@active`,
-          //   }
-          // );
+          await eosPhoenixContract.init(
+            {
+              phoenix_vaccount_pubkey: `EOS1111111111111111111111111111111114T1Anm`,
+            },
+            {
+              authorization: `${phoenixCode}@active`,
+            }
+          );
           console.log(`issuing`)
           await eosTokenContract.issue(
             {
-              to: tokenCode,
-              quantity: "1000.0000 AIRZ",
+              to: vAccountPhoenix,
+              quantity: "10000.000000000 WEOSDT",
               memo: ``,
             },
             {
@@ -128,14 +128,12 @@ describe(`vAccounts Service Test Contract`, () => {
           console.warn(`initialization went wrong`, err.message);
         }
 
-        const balres = await readVRAMData({
+        await readVRAMData({
           contract: tokenCode,
-          key: `AIRZ`,
+          key: `WEOSDT`,
           table: `accounts`,
-          scope: tokenCode,
-          keytype: 'symbol'
+          scope: vAccountPhoenix,
         });
-        console.log(`BALACE`, balres)
         console.log(`registering vAccounts`);
 
         const dappClient = await createClient({

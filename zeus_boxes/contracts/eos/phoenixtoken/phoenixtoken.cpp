@@ -16,7 +16,7 @@ void phoenixtoken::create(name issuer, asset maximum_supply) {
   eosio::check(existing == statstable.end(),
                "token with symbol already exists");
 
-  statstable.emplace(_self, [&](auto& s) {
+  statstable.emplace(_self, [&](auto &s) {
     s.supply.symbol = maximum_supply.symbol;
     s.max_supply = maximum_supply;
     s.issuer = issuer;
@@ -34,7 +34,7 @@ void phoenixtoken::issue(name to, asset quantity, string memo) {
   auto existing = statstable.find(sym_name);
   eosio::check(existing != statstable.end(),
                "token with symbol does not exist, create token before issue");
-  const auto& st = *existing;
+  const auto &st = *existing;
 
   require_auth(st.issuer);
   eosio::check(quantity.is_valid(), "invalid quantity");
@@ -46,7 +46,7 @@ void phoenixtoken::issue(name to, asset quantity, string memo) {
                "quantity exceeds available supply");
 
   statstable.modify(st, eosio::same_payer,
-                    [&](auto& s) { s.supply += quantity; });
+                    [&](auto &s) { s.supply += quantity; });
 
   // special check here because the EOS account => vAccount mapping
   // makes it impossible to know for any other issuer
@@ -54,13 +54,8 @@ void phoenixtoken::issue(name to, asset quantity, string memo) {
   eosio::check(to == PHOENIX_VACCOUNT,
                "only phoenix vaccount may receive new supply");
   // check if phoenix vaccount exists
-  // phoenixtoken::check_user(PHOENIX_VACCOUNT);
+  phoenixtoken::check_user(PHOENIX_VACCOUNT);
   add_balance(to, quantity);
-
-  //   if (to != st.issuer) {
-  //     SEND_INLINE_ACTION(*this, transfer, {st.issuer, "active"_n},
-  //                        {st.issuer, to, quantity, memo});
-  //   }
 }
 
 void phoenixtoken::transfer(name from, name to, asset quantity, string memo) {
@@ -76,7 +71,7 @@ void phoenixtoken::transfer(name from, name to, asset quantity, string memo) {
   _transfer(from, to, quantity);
 }
 
-void phoenixtoken::open(const name& owner, const symbol& symbol) {
+void phoenixtoken::open(const name &owner, const symbol &symbol) {
   check_running();
   // we want to open it in signup action and do not have vaccount auth
   require_auth(phoenix_account);
@@ -88,56 +83,55 @@ void phoenixtoken::open(const name& owner, const symbol& symbol) {
 
   auto sym_code_raw = symbol.code().raw();
   stats statstable(get_self(), sym_code_raw);
-  const auto& st = statstable.get(sym_code_raw, "symbol does not exist");
+  const auto &st = statstable.get(sym_code_raw, "symbol does not exist");
   check(st.supply.symbol == symbol, "symbol precision mismatch");
 
   accounts_t acnts(
-      get_self(),   // contract
-      owner.value,  // scope
-      1024,         // optional: shards per table
-      64,           // optional: buckets per shard
-      false,  // optional: pin shards in RAM - (buckets per shard) X (shards
-              // per table) X 32B - 2MB in this example
-      false,  // optional: pin buckets in RAM - keeps most of the data in RAM.
-              // should be evicted manually after the process
+      get_self(),  // contract
+      owner.value, // scope
+      1024,        // optional: shards per table
+      64,          // optional: buckets per shard
+      false, // optional: pin shards in RAM - (buckets per shard) X (shards
+             // per table) X 32B - 2MB in this example
+      false, // optional: pin buckets in RAM - keeps most of the data in RAM.
+             // should be evicted manually after the process
       VACCOUNTS_DELAYED_CLEANUP);
 
   auto it = acnts.find(sym_code_raw);
   if (it == acnts.end()) {
-    acnts.emplace(get_self(), [&](auto& a) { a.balance = asset{0, symbol}; });
+    acnts.emplace(get_self(), [&](auto &a) { a.balance = asset{0, symbol}; });
   }
 }
 
-
 // withdraw token from vaccount to EOSIO account
 // void phoenixtoken::withdraw(withdraw_payload payload) {
-  // check_running();
-  // require_vaccount(payload.from);
+// check_running();
+// require_vaccount(payload.from);
 
-  // const auto user = _users.find(payload.from.value);
-  // check(user != _users.end(), "user does not exist");
-  // check(is_account(payload.to_eos_account),
-  //       "withdrawal eos account does not exist");
+// const auto user = _users.find(payload.from.value);
+// check(user != _users.end(), "user does not exist");
+// check(is_account(payload.to_eos_account),
+//       "withdrawal eos account does not exist");
 
-  // check(payload.quantity.symbol.is_valid(), "invalid quantity");
-  // check(payload.quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
-  //       "invalid token symbol");
-  // check(payload.quantity.amount > 0, "amount must be positive");
+// check(payload.quantity.symbol.is_valid(), "invalid quantity");
+// check(payload.quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
+//       "invalid token symbol");
+// check(payload.quantity.amount > 0, "amount must be positive");
 
-  // // burn: update virtual token balance: "from" -> "phoenix"
-  // _transfer(payload.from, PHOENIX_VACCOUNT, payload.quantity);
-  // token::transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
-  //                                        {get_self(), "active"_n});
-  // // send real token "self" -> "to"
-  // withdraw_action.send(get_self(), payload.to_eos_account, payload.quantity,
-  //                      "Phoenix Withdraw");
+// // burn: update virtual token balance: "from" -> "phoenix"
+// _transfer(payload.from, PHOENIX_VACCOUNT, payload.quantity);
+// token::transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
+//                                        {get_self(), "active"_n});
+// // send real token "self" -> "to"
+// withdraw_action.send(get_self(), payload.to_eos_account, payload.quantity,
+//                      "Phoenix Withdraw");
 // }
 
-void phoenixtoken::_transfer(const name& from, const name& to,
-                        const asset& quantity) {
+void phoenixtoken::_transfer(const name &from, const name &to,
+                             const asset &quantity) {
   auto sym = quantity.symbol.code().raw();
   stats statstable(_self, sym);
-  const auto& st = statstable.get(sym);
+  const auto &st = statstable.get(sym);
 
   // require_recipient( from );
   // require_recipient( to );
@@ -160,58 +154,57 @@ void phoenixtoken::transferv(transferv_payload payload) {
 
 void phoenixtoken::add_balance(name owner, asset value) {
   accounts_t to_acnts(
-      get_self(),   // contract
-      owner.value,  // scope
-      1024,         // optional: shards per table
-      64,           // optional: buckets per shard
-      false,  // optional: pin shards in RAM - (buckets per shard) X (shards
-              // per table) X 32B - 2MB in this example
-      false,  // optional: pin buckets in RAM - keeps most of the data in RAM.
-              // should be evicted manually after the process
+      get_self(),  // contract
+      owner.value, // scope
+      1024,        // optional: shards per table
+      64,          // optional: buckets per shard
+      false, // optional: pin shards in RAM - (buckets per shard) X (shards
+             // per table) X 32B - 2MB in this example
+      false, // optional: pin buckets in RAM - keeps most of the data in RAM.
+             // should be evicted manually after the process
       VACCOUNTS_DELAYED_CLEANUP);
-  const auto& to = to_acnts.find(value.symbol.code().raw());
+  const auto &to = to_acnts.find(value.symbol.code().raw());
   if (to == to_acnts.end()) {
-    to_acnts.emplace(get_self(), [&](auto& a) { a.balance = value; });
+    to_acnts.emplace(get_self(), [&](auto &a) { a.balance = value; });
   } else {
-    to_acnts.modify(to, get_self(), [&](auto& a) { a.balance += value; });
+    to_acnts.modify(to, get_self(), [&](auto &a) { a.balance += value; });
   }
 }
 
 void phoenixtoken::sub_balance(name owner, asset value) {
   accounts_t from_acnts(get_self(), owner.value, 1024, 64, false, false,
                         VACCOUNTS_DELAYED_CLEANUP);
-  const auto& from =
+  const auto &from =
       from_acnts.get(value.symbol.code().raw(), "no balance object found");
   eosio::check(from.balance.amount >= value.amount, "overdrawn balance");
   // CHANGED: never close balance on coldtoken
   // if (from.balance.amount == value.amount) {
   //   from_acnts.erase(from);
   // } else {
-    from_acnts.modify(from, get_self(), [&](auto& a) { a.balance -= value; });
+  from_acnts.modify(from, get_self(), [&](auto &a) { a.balance -= value; });
   // }
 }
 
 asset phoenixtoken::get_supply(symbol_code sym) const {
   stats statstable(_self, sym.raw());
-  const auto& st = statstable.get(sym.raw());
+  const auto &st = statstable.get(sym.raw());
   return st.supply;
 }
 
 asset phoenixtoken::get_balance(name owner, symbol sym) const {
   symbol_code sym_code = sym.code();
   accounts_t accountstable(_self, owner.value);
-  const auto& ac = accountstable.find(sym_code.raw());
+  const auto &ac = accountstable.find(sym_code.raw());
   return ac == accountstable.end() ? asset(0, sym) : ac->balance;
 }
 
 void phoenixtoken::check_user(const name &name) {
   print("phoenix_account", phoenix_account.to_string(), "\n");
   print("name", name.to_string(), "\n");
-  phoenixtoken::users_table _users(phoenix_account, phoenix_account.value
-    //, 1024, 64, false, false, 0
-  );
-  const auto user = _users.get(name.value, std::string("user does not exist" + name.to_string()).c_str());
-  // check(user != _users.end(), "user does not exist: " + name.to_string());
+  phoenix::users_table _users(phoenix_account, phoenix_account.value, 1024, 64,
+                              false, false, 0);
+  _users.get(name.value,
+             std::string("user does not exist" + name.to_string()).c_str());
 }
 
 void phoenixtoken::check_running() {
@@ -219,7 +212,7 @@ void phoenixtoken::check_running() {
   check(!g.paused, "contract is currently under maintenance. Check back soon");
 }
 
-std::vector<std::string> parse_memo(const std::string& memo) {
+std::vector<std::string> parse_memo(const std::string &memo) {
   std::vector<std::string> results;
   auto end = memo.cend();
   auto start = memo.cbegin();
@@ -230,13 +223,15 @@ std::vector<std::string> parse_memo(const std::string& memo) {
       start = it + 1;
     }
   }
-  if (start != end) results.emplace_back(start, end);
+  if (start != end)
+    results.emplace_back(start, end);
 
   return results;
 }
 
-void phoenixtoken::on_transfer(const eosio::name& from, const eosio::name& to,
-                          const eosio::asset& quantity, const std::string& memo) {
+void phoenixtoken::on_transfer(const eosio::name &from, const eosio::name &to,
+                               const eosio::asset &quantity,
+                               const std::string &memo) {
   check_running();
   // sending EOS, do nothing
   if (from == get_self() || from == name("eosio.stake")) {
