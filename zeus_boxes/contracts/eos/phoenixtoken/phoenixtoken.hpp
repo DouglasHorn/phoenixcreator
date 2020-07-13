@@ -49,6 +49,12 @@ struct transferv_payload {
   string memo;
   EOSLIB_SERIALIZE(transferv_payload, (vaccount)(to)(quantity)(memo))
 };
+struct withdrawv_payload {
+  name vaccount;
+  name to_eos_account;
+  asset quantity;
+  EOSLIB_SERIALIZE(withdrawv_payload, (vaccount)(to_eos_account)(quantity))
+};
 
 ACTION create(name issuer, asset maximum_supply);
 ACTION issue(name to, asset quantity, string memo);
@@ -57,7 +63,8 @@ ACTION transfer(name from, name to, asset quantity, string memo);
 // requires vaccount auth
 ACTION transferv(transferv_payload payload);
 ACTION open(const name &owner, const symbol &symbol);
-// ACTION withdraw(const name& owner, const symbol& symbol);
+ACTION withdrawv(withdrawv_payload payload);
+ACTION payoutfees(name to);
 void on_transfer(const eosio::name &from, const eosio::name &to,
                  const eosio::asset &quantity, const std::string &memo);
 
@@ -107,7 +114,7 @@ public:
 phoenixtoken(name receiver, name code, datastream<const char *> ds)
     : contract(receiver, code, ds), _globals(receiver, receiver.value) {}
 
-VACCOUNTS_APPLY(((transferv_payload)(transferv)))
+VACCOUNTS_APPLY(((transferv_payload)(transferv))((withdrawv_payload)(withdrawv)))
 
 private:
 globals get_globals() {

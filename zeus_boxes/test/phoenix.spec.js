@@ -48,6 +48,7 @@ const { runTrx, rpc } = initHelpers({ endpoint });
 describe(`Phoenix tests`, () => {
   let selectedNetwork = getNetwork(getDefaultArgs());
   let eosPhoenixContract;
+  let vTokenContract;
   let eosTokenContract;
   let privateWif;
   let testAccountNames = [`testacc1`, `testacc2`];
@@ -84,7 +85,7 @@ describe(`Phoenix tests`, () => {
 
         // initialize vaccount service with chainId
         eosPhoenixContract = await getTestContract(phoenixCode);
-        eosTokenContract = await getTestContract(tokenCode);
+        vTokenContract = await getTestContract(tokenCode);
         const chainId = (await rpc.get_info()).chain_id;
 
         try {
@@ -96,7 +97,7 @@ describe(`Phoenix tests`, () => {
               authorization: `${phoenixCode}@active`,
             }
           );
-          await eosTokenContract.xvinit(
+          await vTokenContract.xvinit(
             {
               host: phoenixCode,
             },
@@ -104,7 +105,7 @@ describe(`Phoenix tests`, () => {
               authorization: `${tokenCode}@active`,
             }
           );
-          await eosTokenContract.create(
+          await vTokenContract.create(
             {
               issuer: tokenCode,
               maximum_supply: "17000000.000000000 WEOSDT",
@@ -121,11 +122,11 @@ describe(`Phoenix tests`, () => {
               authorization: `${phoenixCode}@active`,
             }
           );
-          console.log(`issuing`);
-          await eosTokenContract.issue(
+          console.log(`issuing all tokens to phoenix`);
+          await vTokenContract.issue(
             {
               to: vAccountPhoenix,
-              quantity: "10000.000000000 WEOSDT",
+              quantity: "17000000.000000000 WEOSDT",
               memo: ``,
             },
             {
@@ -171,6 +172,44 @@ describe(`Phoenix tests`, () => {
           // ignore vaccount already exists error
           console.warn(`vaccount signup failed`, _err.message);
         }
+
+        // create test accounts
+        testAccountKeys = await Promise.all(
+          testAccountNames.map(name => getCreateAccount(name))
+        );
+
+        // issue them some real WEOSDT
+        const eosToken = await getLocalDSPEos("eosio.token", getDefaultArgs());
+        eosTokenContract = await eosToken.contract("eosio.token");
+        await eosTokenContract.create("eosio.token", `170000000.000000000 WEOSDT`, {
+          authorization: [`eosio.token@active`]
+        });
+        await eosTokenContract.issue(
+          {
+            to: `eosio.token`,
+            quantity: "170000000.000000000 WEOSDT",
+            memo: ``
+          },
+          {
+            authorization: [`eosio.token@active`]
+          }
+        );
+
+        await Promise.all(
+          testAccountNames.map(async name => {
+            return eosTokenContract.transfer(
+              {
+                from: `eosio.token`,
+                to: name,
+                quantity: "10.000000000 WEOSDT",
+                memo: ``
+              },
+              {
+                authorization: `eosio.token@active`
+              }
+            );
+          })
+        );
 
         done();
       } catch (e) {
@@ -352,15 +391,15 @@ describe(`Phoenix tests`, () => {
   it("can transfer WEOSDT to vaccounts", (done) => {
     (async () => {
       try {
-        await eosTokenContract.transfer(
+        await vTokenContract.transfer(
           {
             from: vAccountPhoenix,
             to: vAccount1,
-            quantity: "20.987654321 WEOSDT",
+            quantity: "20.000000000 WEOSDT",
             memo: ``,
           },
           {
-            authorization: [`${tokenCode}@active`],
+            authorization: `${tokenCode}@active`,
           }
         );
 
@@ -371,7 +410,7 @@ describe(`Phoenix tests`, () => {
           scope: vAccount1,
           keytype: `symbol`,
         });
-        assert(tableRes.row.balance === `20.987654321 WEOSDT`, "wrong balance");
+        assert.equal(tableRes.row.balance, `20.000000000 WEOSDT`, "wrong balance 1");
 
         await vaccClient.push_liquid_account_transaction(
           tokenCode,
@@ -380,7 +419,7 @@ describe(`Phoenix tests`, () => {
           {
             vaccount: vAccount1,
             to: vAccount2,
-            quantity: "10.987654321 WEOSDT",
+            quantity: "20.000000000 WEOSDT",
             memo: ``,
           }
         );
@@ -392,7 +431,28 @@ describe(`Phoenix tests`, () => {
           scope: vAccount2,
           keytype: `symbol`,
         });
-        assert(tableRes.row.balance === `10.987654321 WEOSDT`, "wrong balance");
+        assert.equal(tableRes.row.balance, `20.000000000 WEOSDT`, "wrong balance 2");
+
+        // reset balances to 0
+        await vaccClient.push_liquid_account_transaction(
+          tokenCode,
+          privateWif,
+          "transferv",
+          {
+            vaccount: vAccount2,
+            to: vAccountPhoenix,
+            quantity: "20.000000000 WEOSDT",
+            memo: ``,
+          }
+        );
+        tableRes = await readVRAMData({
+          contract: tokenCode,
+          key: `WEOSDT`,
+          table: `accounts`,
+          scope: vAccount2,
+          keytype: `symbol`,
+        });
+        assert.equal(tableRes.row.balance, `0.000000000 WEOSDT`, "wrong balance 3");
 
         done();
       } catch (e) {
@@ -401,35 +461,28 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can create posts", (done) => {
+  it("can create posts", (done) => {
     (async () => {
       try {
-        let res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "createpost",
-            data: {
-              payload: {
-                author: vAccount1,
-                title: Buffer.from(`Title`, "utf8"),
-                content: Buffer.from(postText, "utf8"),
-                featured_image_url: Buffer.from(
-                  `https://blabla.test/14.jpg`,
-                  "utf8"
-                ),
-                meta: ``,
-                encrypted: false,
-                decrypt_for_usd: 0,
-                post_key: [],
-                expected_id: 0,
-              },
-            },
-          },
-        });
-
-        let outputLines = res.processed.action_traces[0].console;
-        // console.log(outputLines);
+        await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "createpost",
+          {
+            vaccount: vAccount1,
+            title: Buffer.from(`Title`, "utf8"),
+            content: Buffer.from(postText, "utf8"),
+            featured_image_url: Buffer.from(
+              `https://blabla.test/14.jpg`,
+              "utf8"
+            ),
+            meta: ``,
+            encrypted: false,
+            decrypt_for_usd: 0,
+            post_key: [],
+            expected_id: 0,
+          }
+        );
 
         let user1 = (
           await readVRAMData({
@@ -439,7 +492,6 @@ describe(`Phoenix tests`, () => {
             scope: phoenixCode,
           })
         ).row;
-        console.log(user1);
         assert.equal(
           user1.post_indexes.length,
           1,
@@ -453,39 +505,32 @@ describe(`Phoenix tests`, () => {
           table: `posts`,
           scope: phoenixCode,
         });
-        console.log(tableRes);
+        // console.log(tableRes);
         assert(
           Buffer.from(tableRes.row.title).toString(`utf8`) === `Title`,
           "wrong title for post 1"
         );
 
         // post 2
-        res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "createpost",
-            data: {
-              payload: {
-                author: vAccount2,
-                title: Buffer.from(`Vaccount 2`, "utf8"),
-                content: Buffer.from(`## Vaccount 2\n> content`, "utf8"),
-                featured_image_url: Buffer.from(
-                  `https://blabla.test/14.jpg`,
-                  "utf8"
-                ),
-                meta: ``,
-                encrypted: false,
-                decrypt_for_usd: 0,
-                post_key: [],
-                expected_id: 1,
-              },
-            },
-          },
-        });
-
-        outputLines = res.processed.action_traces[0].console;
-        // console.log(outputLines);
+        await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "createpost",
+          {
+            vaccount: vAccount2,
+            title: Buffer.from(`Vaccount 2`, "utf8"),
+            content: Buffer.from(`## Vaccount 2\n> content`, "utf8"),
+            featured_image_url: Buffer.from(
+              `https://blabla.test/14.jpg`,
+              "utf8"
+            ),
+            meta: ``,
+            encrypted: false,
+            decrypt_for_usd: 0,
+            post_key: [],
+            expected_id: 1,
+          }
+        );
 
         let user2 = (
           await readVRAMData({
@@ -508,7 +553,7 @@ describe(`Phoenix tests`, () => {
           table: `posts`,
           scope: phoenixCode,
         });
-        console.log(tableRes);
+        // console.log(tableRes);
         assert(
           Buffer.from(tableRes.row.title).toString(`utf8`) === `Vaccount 2`,
           "wrong title for post 2"
@@ -521,35 +566,30 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can update the post", (done) => {
+  it("can update the post", (done) => {
     (async () => {
       try {
-        const res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "updatepost",
-            data: {
-              payload: {
-                author: vAccount1,
-                id: 0,
-                title: Buffer.from(`Updated Title`, "utf8"),
-                content: Buffer.from(`## Markdown header\n> content`, "utf8"),
-                featured_image_url: Buffer.from(
-                  `https://blabla.test/14.jpg`,
-                  "utf8"
-                ),
-                meta: ``,
-                encrypted: false,
-                decrypt_for_usd: 0,
-                post_key: [],
-                delete_post: false,
-              },
-            },
-          },
-        });
-
-        let outputLines = res.processed.action_traces[0].console;
+        const res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "updatepost",
+          {
+            vaccount: vAccount1,
+            id: 0,
+            title: Buffer.from(`Updated Title`, "utf8"),
+            content: Buffer.from(`## Markdown header\n> content`, "utf8"),
+            featured_image_url: Buffer.from(
+              `https://blabla.test/14.jpg`,
+              "utf8"
+            ),
+            meta: ``,
+            encrypted: false,
+            decrypt_for_usd: 0,
+            post_key: [],
+            delete_post: false,
+          }
+        );
+        let outputLines = res.result.processed.action_traces[0].console;
         // console.log(`output`, outputLines);
 
         const tableRes = await readVRAMData({
@@ -570,25 +610,21 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can follow users", (done) => {
+  it("can follow users", (done) => {
     (async () => {
       try {
-        let res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "follow",
-            data: {
-              payload: {
-                from: vAccount1,
-                follows: [vAccount2, vAccount3],
-                unfollows: [],
-              },
-            },
-          },
-        });
+        let res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "follow",
+          {
+            vaccount: vAccount1,
+            follows: [vAccount2, vAccount3],
+            unfollows: [],
+          }
+        );
 
-        let outputLines = res.processed.action_traces[0].console;
+        let outputLines = res.result.processed.action_traces[0].console;
         // console.log(`output`, outputLines);
 
         let tableRes = await readVRAMData({
@@ -628,20 +664,17 @@ describe(`Phoenix tests`, () => {
         /**
          * Unfollow
          */
-        res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "follow",
-            data: {
-              payload: {
-                from: vAccount1,
-                follows: [],
-                unfollows: [vAccount2],
-              },
-            },
-          },
-        });
+        res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "follow",
+          {
+            vaccount: vAccount1,
+            follows: [],
+            unfollows: [vAccount2],
+          }
+        );
+
         tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount1,
@@ -672,25 +705,21 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can link an eos account", (done) => {
+  it("can link an eos account", (done) => {
     (async () => {
       const linkedAccount = testAccountNames[0];
       try {
-        let res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "linkaccount",
-            data: {
-              payload: {
-                from: vAccount1,
-                account: linkedAccount,
-              },
-            },
-          },
-        });
+        let res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "linkaccount",
+          {
+            vaccount: vAccount1,
+            account: linkedAccount,
+          }
+        );
 
-        let outputLines = res.processed.action_traces[0].console;
+        let outputLines = res.result.processed.action_traces[0].console;
         // console.log(`output`, outputLines);
 
         let tableRes = await readVRAMData({
@@ -712,81 +741,73 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can deposit and withdraw EOS", (done) => {
+  it("can deposit and withdraw WEOSDT", (done) => {
     (async () => {
       const linkedAccount = testAccountNames[0];
       try {
         await eosTokenContract.transfer(
           linkedAccount,
-          phoenixCode,
-          `5.0000 EOS`,
+          tokenCode,
+          `5.000000000 WEOSDT`,
           `deposit ${vAccount1}`,
           {
             authorization: `${linkedAccount}@active`,
             keyProvider: [testAccountKeys[0].active.privateKey],
           }
         );
-
         let tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `EOS`,
+          contract: tokenCode,
+          key: `WEOSDT`,
           table: `accounts`,
           scope: vAccount1,
+          keytype: `symbol`,
         });
         assert.equal(
           tableRes.row.balance,
-          `5.0000 EOS`,
-          "wrong EOS balance after deposit"
+          `5.000000000 WEOSDT`,
+          "wrong balance after deposit"
         );
 
-        let res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "withdraw",
-            data: {
-              payload: {
-                from: vAccount1,
-                to_eos_account: linkedAccount,
-                quantity: `2.0000 EOS`,
-              },
-            },
-          },
-        });
+        let res = await vaccClient.push_liquid_account_transaction(
+          tokenCode,
+          privateWif,
+          "withdrawv",
+          {
+            vaccount: vAccount1,
+            to_eos_account: linkedAccount,
+            quantity: `2.000000000 WEOSDT`,
+          }
+        );
 
-        let outputLines = res.processed.action_traces[0].console;
+        let outputLines = res.result.processed.action_traces[0].console;
         // console.log(`output`, outputLines);
-
         tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `EOS`,
+          contract: tokenCode,
+          key: `WEOSDT`,
           table: `accounts`,
           scope: vAccount1,
+          keytype: `symbol`,
         });
         assert.equal(
           tableRes.row.balance,
-          `3.0000 EOS`,
-          "wrong EOS balance after withdraw"
+          `3.000000000 WEOSDT`,
+          "wrong balance after withdraw"
         );
 
         // overdraw balance should not be possible
         let failed = false;
         try {
-          res = await runTrx({
-            contract_code: phoenixCode,
-            wif: privateWif,
-            payload: {
-              name: "withdraw",
-              data: {
-                payload: {
-                  from: vAccount1,
-                  to_eos_account: linkedAccount,
-                  quantity: `3.0001 EOS`,
-                },
-              },
-            },
-          });
-          failed = Boolean(res.error);
+          res = await vaccClient.push_liquid_account_transaction(
+            tokenCode,
+            privateWif,
+            "withdrawv",
+            {
+              vaccount: vAccount1,
+              to_eos_account: linkedAccount,
+              quantity: `3.000000001 WEOSDT`,
+            }
+          );
+          failed = Boolean(res.result.error);
         } catch (err) {
           failed = true;
         }
@@ -800,28 +821,26 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can create a pledge to someone", (done) => {
+  it("can create a pledge to someone", (done) => {
     (async () => {
       try {
         const pledge = {
           from: vAccount1,
           to: vAccount2,
-          usd_value: 7.0,
-          eos_quantity: `1.0000 EOS`,
-          phoenix_quantity: `1.0000 PHOENIX`,
+          usd_value: 2.0,
+          weosdt_quantity: `2.000000000 WEOSDT`,
           autorenew: true,
           next_delete: false,
         };
-        let res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "pledge",
-            data: {
-              payload: pledge,
-            },
-          },
-        });
+        let res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "pledge",
+          {
+            ...pledge,
+            vaccount: pledge.from,
+          }
+        );
 
         let tableRes = await readVRAMData({
           contract: phoenixCode,
@@ -856,49 +875,29 @@ describe(`Phoenix tests`, () => {
         );
 
         tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `EOS`,
+          contract: tokenCode,
+          key: `WEOSDT`,
           table: `accounts`,
           scope: vAccount1,
+          keytype: `symbol`,
         });
         assert.equal(
           tableRes.row.balance,
-          `2.0000 EOS`,
-          "wrong EOS balance for pledger after pledge"
-        );
-        tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `PHOENIX`,
-          table: `accounts`,
-          scope: vAccount1,
-        });
-        assert.equal(
-          tableRes.row.balance,
-          `9.0000 PHOENIX`,
-          "wrong PHOENIX balance for pledger after pledge"
+          `1.000000000 WEOSDT`,
+          "wrong balance for pledger after pledge"
         );
 
         tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `EOS`,
+          contract: tokenCode,
+          key: `WEOSDT`,
           table: `accounts`,
           scope: vAccount2,
+          keytype: `symbol`,
         });
         assert.equal(
           tableRes.row.balance,
-          `1.0000 EOS`,
-          "wrong EOS balance for receiver after pledge"
-        );
-        tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `PHOENIX`,
-          table: `accounts`,
-          scope: vAccount2,
-        });
-        assert.equal(
-          tableRes.row.balance,
-          `11.0000 PHOENIX`,
-          "wrong PHOENIX balance for receiver after pledge"
+          `2.000000000 WEOSDT`,
+          "wrong balance for receiver after pledge"
         );
 
         done();
@@ -1024,7 +1023,7 @@ describe(`Phoenix tests`, () => {
           },
         });
 
-        let outputLines = res.processed.action_traces[0].console;
+        let outputLines = res.result.processed.action_traces[0].console;
         // console.log(`output`, outputLines);
 
         let tableRes = await readVRAMData({

@@ -1,6 +1,7 @@
 #include "phoenix.hpp"
 
 // #include "eosio_token.hpp"
+#include "constants.hpp"
 #include "phoenixtoken-interface.hpp"
 #include "helpers.hpp"
 
@@ -128,18 +129,22 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
   setKey(PHOENIX_VACCOUNT, phoenix_vaccount_pubkey);
   _users.emplace(get_self(),
                  [&](auto &new_user) { new_user.username = PHOENIX_VACCOUNT; });
+  setKey(PHOENIX_FEES_VACCOUNT, phoenix_vaccount_pubkey);
+  _users.emplace(get_self(),
+                 [&](auto &new_user) { new_user.username = PHOENIX_FEES_VACCOUNT; });
 
   phoenixtoken::open_action vopen(token_account,
                                         {get_self(), "active"_n});
   vopen.send(PHOENIX_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
+  vopen.send(PHOENIX_FEES_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
   // create VWEOSDT on token contract
-  // const auto max_weosdt_supply =
-  //     asset(170'000'000 * 1'000'000'000,
-  //           WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
+  const auto max_weosdt_supply =
+      asset(170'000'000 * 1'000'000'000,
+            WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
   // phoenixtoken::create_action create(token_account, {get_self(), "active"_n});
   // create.send(get_self(), max_weosdt_supply);
-  // phoenixtoken::issue_action issue(token_account, {get_self(), "active"_n});
-  // issue.send(PHOENIX_VACCOUNT, max_weosdt_supply, "init");
+  phoenixtoken::issue_action issue(token_account, {get_self(), "active"_n});
+  issue.send(PHOENIX_VACCOUNT, max_weosdt_supply, "init");
 }
 
 void phoenix::updateuser(const updateuser_payload &payload) {
@@ -549,7 +554,6 @@ void phoenix::pay_pledge(const name &payer, const uint64_t &pledge_id) {
   if ((quantity - fees).amount > 0) {
     internal_vtransfer(payer, pledge->to, quantity - fees, "subscription");
   }
-
   if (fees.amount > 0) {
     // transfer fees to vfees account
     internal_vtransfer(payer, PHOENIX_FEES_VACCOUNT, fees, "subscription fees");

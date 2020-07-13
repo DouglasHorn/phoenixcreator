@@ -13,9 +13,9 @@
 #include "../dappservices/cron.hpp"
 #include "../dappservices/multi_index.hpp"
 #include "../dappservices/vaccounts.hpp"
+#include "./constants.hpp"
 #include <eosio/eosio.hpp>
 #include <eosio/system.hpp>
-#include "./constants.hpp"
 
 #define DAPPSERVICES_ACTIONS()                                                 \
   XSIGNAL_DAPPSERVICE_ACTION                                                   \
@@ -356,7 +356,6 @@ ACTION createpost(createpost_payload payload);
 ACTION updatepost(updatepost_payload payload);
 ACTION follow(follow_payload payload);
 ACTION linkaccount(linkaccount_payload payload);
-// ACTION withdraw(withdraw_payload payload);
 ACTION pledge(pledge_payload payload);
 ACTION renewpledge(renewpledge_payload payload);
 #ifdef __TEST__

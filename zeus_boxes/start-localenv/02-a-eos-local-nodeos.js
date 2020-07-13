@@ -32,7 +32,7 @@ module.exports = async (args) => {
     '--http-server-address=0.0.0.0:8888',
     '--access-control-allow-origin=*',
     '--contracts-console',
-    '--max-transaction-time=150000',
+    '--max-transaction-time=300000',
     // standard nodes fail when uploading contract with > 500 KB
     '--max-body-size=2097152',
     '--http-validate-host=false',

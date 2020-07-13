@@ -61,7 +61,8 @@ void phoenixtoken::issue(name to, asset quantity, string memo) {
 void phoenixtoken::transfer(name from, name to, asset quantity, string memo) {
   check_running();
   // invoked through transferv as an inline action from vaccounts
-  require_auth(get_self());
+  // or from phoenix::pay_pledge as an inline action
+  check(has_auth(get_self()) || has_auth(phoenix_account), "use the transferv action for transfers from vaccounts");
   eosio::check(from != to, "cannot transfer to self");
   phoenixtoken::check_user(from);
   phoenixtoken::check_user(to);
@@ -104,28 +105,45 @@ void phoenixtoken::open(const name &owner, const symbol &symbol) {
 }
 
 // withdraw token from vaccount to EOSIO account
-// void phoenixtoken::withdraw(withdraw_payload payload) {
-// check_running();
-// require_vaccount(payload.from);
+void phoenixtoken::withdrawv(withdrawv_payload payload) {
+  check_running();
+  require_vaccount(payload.vaccount);
 
-// const auto user = _users.find(payload.from.value);
-// check(user != _users.end(), "user does not exist");
-// check(is_account(payload.to_eos_account),
-//       "withdrawal eos account does not exist");
+  check_user(payload.vaccount);
+  check(is_account(payload.to_eos_account),
+        "withdrawal eos account does not exist");
 
-// check(payload.quantity.symbol.is_valid(), "invalid quantity");
-// check(payload.quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
-//       "invalid token symbol");
-// check(payload.quantity.amount > 0, "amount must be positive");
+  check(payload.quantity.symbol.is_valid(), "invalid quantity");
+  check(payload.quantity.symbol == WEOSDT_EXT_SYMBOL.get_symbol(),
+        "invalid token symbol");
+  check(payload.quantity.amount > 0, "amount must be positive");
 
-// // burn: update virtual token balance: "from" -> "phoenix"
-// _transfer(payload.from, PHOENIX_VACCOUNT, payload.quantity);
-// token::transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
-//                                        {get_self(), "active"_n});
-// // send real token "self" -> "to"
-// withdraw_action.send(get_self(), payload.to_eos_account, payload.quantity,
-//                      "Phoenix Withdraw");
-// }
+  // burn: update virtual token balance: "from" -> "phoenix"
+  _transfer(payload.vaccount, PHOENIX_VACCOUNT, payload.quantity);
+  transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
+                                         {get_self(), "active"_n});
+  // send real token "self" -> "to"
+  withdraw_action.send(get_self(), payload.to_eos_account, payload.quantity,
+                       "Phoenix Withdraw");
+}
+
+void phoenixtoken::payoutfees(name to) {
+  check_running();
+  require_auth(get_self());
+
+  check_user(PHOENIX_FEES_VACCOUNT);
+  check(is_account(to),
+        "withdrawal eos account does not exist");
+
+  auto fees = get_balance(PHOENIX_FEES_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
+  // burn: update virtual token balance: "from" -> "phoenix"
+  _transfer(PHOENIX_FEES_VACCOUNT, PHOENIX_VACCOUNT, fees);
+  transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
+                                         {get_self(), "active"_n});
+  // send real token "self" -> "to"
+  withdraw_action.send(get_self(), to, fees,
+                       "fees payout");
+}
 
 void phoenixtoken::_transfer(const name &from, const name &to,
                              const asset &quantity) {
@@ -254,7 +272,7 @@ void phoenixtoken::on_transfer(const eosio::name &from, const eosio::name &to,
   const name depositor = name(parsed_memo[1]);
   check_user(depositor);
 
-  // issue virtual EOS
+  // issue virtual WEOSDT
   _transfer(PHOENIX_VACCOUNT, depositor, quantity);
 }
 
@@ -272,7 +290,8 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit)(xvinit))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xsignal))
     default:
-      check(false, "unrecognized internal token action: " + name(action).to_string());
+      check(false,
+            "unrecognized internal token action: " + name(action).to_string());
     }
   }
   eosio_exit(0);
