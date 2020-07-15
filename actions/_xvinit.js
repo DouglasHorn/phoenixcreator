@@ -10,6 +10,7 @@ const accounts = Object.keys(env.accounts);
 const ROOT = accounts[0];
 
 const CONTRACT = accounts[accounts.length - 2];
+const TOKEN = accounts[accounts.length - 1];
 
 async function action() {
   try {
@@ -25,6 +26,19 @@ async function action() {
         ],
         data: {
           chainid: env.chain_id
+        }
+      },
+      {
+        account: TOKEN,
+        name: `xvinit`,
+        authorization: [
+          {
+            actor: TOKEN,
+            permission: `active`
+          }
+        ],
+        data: {
+          host: CONTRACT
         }
       }
     ]

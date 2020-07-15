@@ -49,17 +49,13 @@ curl http://faucet.cryptokylin.io/get_token/phoenixashet
 Stake DAPP services: `accountless1` and `ipfsservic`.
 
 ```bash
-# phoenixswap
-node actions/phoenixswap/create.js
-node actions/phoenixswap/issue.js
-
-# phoenixfeed init
-node actions/phoenixfeeds/settokencfg.js
-
 # phoenix init
 node actions/_stakedapp.js # with changes to account name
 node actions/_xvinit.js # with changes to account name
 node actions/init
+
+# phoenixtoken init
+node actions/create-issue
 
 # create some vaccounts
 node actions/login.js

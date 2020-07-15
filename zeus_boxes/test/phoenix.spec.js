@@ -31,9 +31,9 @@ const initHelpers = require("./phoenix.helpers");
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 let phoenixContractCodeName = "phoenix";
-const phoenixCode = "phoenixashe5";
+const phoenixCode = "phoenixv2c11";
 let tokenContractCodeName = "phoenixtoken";
-const tokenCode = "phoenixtokn3";
+const tokenCode = "phoenixv2t11";
 const vAccount1 = `vaccount2`;
 const vAccount2 = `vaccount3`;
 const vAccount3 = `vaccount4`;
@@ -235,6 +235,43 @@ describe(`Phoenix tests`, () => {
           assert.equal(tableRes.row.username, name, "wrong user name");
           console.log(`user ${name} exists`);
         }
+
+        done();
+      } catch (e) {
+        console.error(e);
+        done(e);
+      }
+    })();
+  });
+
+  it.skip("creates free phoenix EOSIO accounts", (done) => {
+    (async () => {
+      try {
+        const eosioKeys = await getCreateKeys(`eosio`);
+        const keyProvider = eosioKeys.active.privateKey;
+        console.log(eosioKeys)
+        await eosTokenContract.transfer(
+          {
+            from: `eosio`,
+            to: tokenCode,
+            quantity: "1000.0000 SYS",
+            memo: ``
+          },
+          {
+            authorization: [`eosio@active`],
+            keyProvider,
+          }
+        );
+        console.log(`TRANSFER DONE`)
+        await vTokenContract.createacc(
+          {
+            account: `hellohello12`,
+            pubkey: `EOS5cq98XjabcoYDNU3RWaMaE4gLSjqYQQL1YRuNZUi6MC2P4tGtD`
+          },
+          {
+            authorization: `${tokenCode}@active`,
+          }
+        );
 
         done();
       } catch (e) {
@@ -896,7 +933,7 @@ describe(`Phoenix tests`, () => {
         });
         assert.equal(
           tableRes.row.balance,
-          `2.000000000 WEOSDT`,
+          `1.960000000 WEOSDT`,
           "wrong balance for receiver after pledge"
         );
 
@@ -907,28 +944,26 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can update a pledge", (done) => {
+  it("can update a pledge", (done) => {
     (async () => {
       try {
         const pledge = {
           from: vAccount1,
           to: vAccount2,
           usd_value: 5.9361,
-          eos_quantity: `1.1337 EOS`,
-          phoenix_quantity: `0.1338 PHOENIX`,
+          weosdt_quantity: `6.000000000 WEOSDT`,
           autorenew: false,
           next_delete: true,
         };
-        let res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "pledge",
-            data: {
-              payload: pledge,
-            },
-          },
-        });
+        let res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "pledge",
+          {
+            ...pledge,
+            vaccount: pledge.from,
+          }
+        );
 
         let tableRes = await readVRAMData({
           contract: phoenixCode,
@@ -942,12 +977,9 @@ describe(`Phoenix tests`, () => {
             from: vAccount1,
             to: vAccount2,
             // values from previous create pledge test
-            usd_value: 7.0,
-            eos_quantity: `1.0000 EOS`,
-            phoenix_quantity: `1.0000 PHOENIX`,
+            usd_value: 2,
             // updates values from here
-            next_eos_quantity: `1.1337 EOS`,
-            next_phoenix_quantity: `0.1338 PHOENIX`,
+            next_weosdt_quantity: `6.000000000 WEOSDT`,
             autorenew: false,
             next_delete: true,
           },
@@ -967,90 +999,72 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
-  it.skip("can renew a pledge", (done) => {
+  it("can renew a pledge", (done) => {
     (async () => {
       try {
         const pledge = {
           from: vAccount1,
           to: vAccount3,
-          usd_value: 7.0,
-          eos_quantity: `1.0000 EOS`,
-          phoenix_quantity: `1.0000 PHOENIX`,
+          usd_value: 0.2,
+          weosdt_quantity: `0.200000000 WEOSDT`,
           autorenew: true,
           next_delete: false,
         };
-        let res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "pledge",
-            data: {
-              payload: pledge,
-            },
-          },
-        });
+        console.log(`pledge creation`)
+        let res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "pledge",
+          {
+            ...pledge,
+            vaccount: pledge.from,
+          }
+        );
         // update pledge
-        res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "pledge",
-            data: {
-              payload: {
-                ...pledge,
-                usd_value: 1.4,
-                eos_quantity: `0.2000 EOS`,
-                phoenix_quantity: `0.2000 PHOENIX`,
-              },
-            },
-          },
-        });
+        console.log(`pledge updation`)
+        res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "pledge",
+          {
+            ...pledge,
+            vaccount: pledge.from,
+            usd_value: 0.1,
+            weosdt_quantity: `0.100000000 WEOSDT`,
+          }
+        );
 
         // pledge should now be be at the end of its cycle
         await delay(6000);
 
-        res = await runTrx({
-          contract_code: phoenixCode,
-          wif: privateWif,
-          payload: {
-            name: "renewpledge",
-            data: {
-              payload: {
-                to: vAccount3,
-                pledge_id: 1,
-              },
-            },
-          },
-        });
+        console.log(`renew pledge`)
+        res = await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "renewpledge",
+          {
+            vaccount: vAccount1,
+            to: vAccount3,
+            pledge_id: 1,
+          }
+        );
 
         let outputLines = res.result.processed.action_traces[0].console;
         // console.log(`output`, outputLines);
 
         let tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `EOS`,
+          contract: tokenCode,
+          key: `WEOSDT`,
           table: `accounts`,
           scope: vAccount3,
+          keytype: `symbol`,
         });
         assert.closeTo(
           Number.parseFloat(tableRes.row.balance.split(` `)[0]),
-          1.2,
+          0.7,
           0.0001,
-          "wrong EOS balance after renew pledge"
+          "wrong WEOSDT balance after renew pledge"
         );
-        tableRes = await readVRAMData({
-          contract: phoenixCode,
-          key: `PHOENIX`,
-          table: `accounts`,
-          scope: vAccount3,
-        });
-        assert.closeTo(
-          Number.parseFloat(tableRes.row.balance.split(` `)[0]),
-          1.2,
-          0.0001,
-          "wrong PHOENIX balance for receiver after pledge"
-        );
-
         done();
       } catch (e) {
         done(e);

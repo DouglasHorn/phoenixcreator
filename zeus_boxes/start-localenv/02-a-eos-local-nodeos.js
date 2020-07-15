@@ -29,6 +29,7 @@ module.exports = async (args) => {
     '--filter-on=*',
     '-d ~/.zeus/nodeos/data',
     '--config-dir ~/.zeus/nodeos/config',
+    '--genesis-json ~/.zeus/nodeos/config/genesis.json',
     '--http-server-address=0.0.0.0:8888',
     '--access-control-allow-origin=*',
     '--contracts-console',
@@ -41,7 +42,7 @@ module.exports = async (args) => {
     '--trace-history-debug-mode',
     '--delete-state-history',
     '--wasm-runtime=eos-vm',
-    '--chain-threads=4'
+    '--chain-threads=4',
   ];
   var ports = [
     '-p 8888:8888',

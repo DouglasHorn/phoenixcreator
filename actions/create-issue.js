@@ -11,24 +11,10 @@ const TOKEN_ACCOUNT = accounts[accounts.length - 1];
 
 async function action() {
   try {
-    await sendTransaction([{
-      account: TOKEN_ACCOUNT,
-      name: `create`,
-      authorization: [
-        {
-          actor: TOKEN_ACCOUNT,
-          permission: `active`
-        }
-      ],
-      data: {
-        issuer: TOKEN_ACCOUNT,
-        maximum_supply: "170000000.000000000 WEOSDT"
-      }
-    },
-    // issue to PHOENIX not needed 
-    // {
+    await sendTransaction([
+      // {
     //   account: TOKEN_ACCOUNT,
-    //   name: `issue`,
+    //   name: `create`,
     //   authorization: [
     //     {
     //       actor: TOKEN_ACCOUNT,
@@ -36,11 +22,26 @@ async function action() {
     //     }
     //   ],
     //   data: {
-    //     to: TOKEN_ACCOUNT,
-    //     quantity: "170000000.00000000 WEOSDT",
-    //     memo: "",
+    //     issuer: TOKEN_ACCOUNT,
+    //     maximum_supply: "170000000.000000000 WEOSDT"
     //   }
     // },
+    // issue to PHOENIX not needed 
+    {
+      account: TOKEN_ACCOUNT,
+      name: `issue`,
+      authorization: [
+        {
+          actor: TOKEN_ACCOUNT,
+          permission: `active`
+        }
+      ],
+      data: {
+        to: `phoenix`,
+        quantity: "170000000.000000000 WEOSDT",
+        memo: "",
+      }
+    },
   ]);
     process.exit(0);
   } catch (error) {

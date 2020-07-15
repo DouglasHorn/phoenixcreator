@@ -5,8 +5,6 @@
 #include "phoenixtoken-interface.hpp"
 #include "helpers.hpp"
 
-constexpr name dsp_name = eosio::name("airdropsdac1");
-
 auto phoenix::check_user(const name &name) {
   const auto user = _users.find(name.value);
   check(user != _users.end(), "user does not exist: " + name.to_string());
@@ -137,14 +135,15 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
                                         {get_self(), "active"_n});
   vopen.send(PHOENIX_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
   vopen.send(PHOENIX_FEES_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
-  // create VWEOSDT on token contract
-  const auto max_weosdt_supply =
-      asset(170'000'000 * 1'000'000'000,
-            WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
+  // create VWEOSDT on token contract & issue all to PHOENIX vaccount
+  // this is done externally because it requires token permission
+  // const auto max_weosdt_supply =
+  //     asset(170'000'000 * 1'000'000'000,
+  //           WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
   // phoenixtoken::create_action create(token_account, {get_self(), "active"_n});
   // create.send(get_self(), max_weosdt_supply);
-  phoenixtoken::issue_action issue(token_account, {get_self(), "active"_n});
-  issue.send(PHOENIX_VACCOUNT, max_weosdt_supply, "init");
+  // phoenixtoken::issue_action issue(token_account, {get_self(), "active"_n});
+  // issue.send(PHOENIX_VACCOUNT, max_weosdt_supply, "init");
 }
 
 void phoenix::updateuser(const updateuser_payload &payload) {

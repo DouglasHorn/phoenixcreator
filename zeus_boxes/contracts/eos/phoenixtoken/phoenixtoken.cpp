@@ -3,6 +3,8 @@
 
 using namespace eosio;
 
+#include "createaccount.cpp"
+
 void phoenixtoken::create(name issuer, asset maximum_supply) {
   require_auth(get_self());
 
@@ -286,7 +288,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
   } else if (receiver == code) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (create)(issue)(transfer)(open))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (create)(issue)(transfer)(open)(createacc))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit)(xvinit))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xsignal))
     default:

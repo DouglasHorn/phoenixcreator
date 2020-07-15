@@ -1,5 +1,7 @@
 #pragma once
 
+#define __TEST__
+
 #define USE_ADVANCED_IPFS
 // #define USE_IPFS_WARMUPROW
 #define VACCOUNTS_SUBSCRIBER
@@ -65,6 +67,7 @@ ACTION transferv(transferv_payload payload);
 ACTION open(const name &owner, const symbol &symbol);
 ACTION withdrawv(withdrawv_payload payload);
 ACTION payoutfees(name to);
+ACTION createacc(name account, eosio::public_key pubkey);
 void on_transfer(const eosio::name &from, const eosio::name &to,
                  const eosio::asset &quantity, const std::string &memo);
 

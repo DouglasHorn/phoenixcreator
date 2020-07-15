@@ -9,7 +9,7 @@ const accounts = Object.keys(env.accounts);
 
 const ROOT = accounts[0];
 
-const STAKE_ACC = `phoenixashe5` // accounts[accounts.length - 1]
+const STAKE_ACC = `phoenixv2t11` // accounts[accounts.length - 1]
 
 const services = [
   {
