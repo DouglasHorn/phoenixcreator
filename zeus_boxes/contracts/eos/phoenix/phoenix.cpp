@@ -2,8 +2,8 @@
 
 // #include "eosio_token.hpp"
 #include "constants.hpp"
-#include "phoenixtoken-interface.hpp"
 #include "helpers.hpp"
+#include "phoenixtoken-interface.hpp"
 
 auto phoenix::check_user(const name &name) {
   const auto user = _users.find(name.value);
@@ -20,8 +20,9 @@ void phoenix::signup(const name &vaccount, const eosio::public_key &pubkey) {
   check_running();
   require_auth(get_self());
 
-  vkeys_t vkeys_table(get_self(), get_self().value, 1024, 64, VACCOUNTS_SHARD_PINNING,
-                      false, VACCOUNTS_DELAYED_CLEANUP);
+  vkeys_t vkeys_table(get_self(), get_self().value, 1024, 64,
+                      VACCOUNTS_SHARD_PINNING, false,
+                      VACCOUNTS_DELAYED_CLEANUP);
   auto existing = vkeys_table.find(vaccount.value);
   eosio::check(existing == vkeys_table.end(), "vaccount already exists");
   vkeys_table.emplace(get_self(), [&](auto &new_key) {
@@ -51,8 +52,7 @@ void phoenix::signup(const name &vaccount, const eosio::public_key &pubkey) {
                  [&](auto &new_user) { new_user.username = vaccount; });
 
   // open token balances
-  phoenixtoken::open_action vopen(token_account,
-                                        {get_self(), "active"_n});
+  phoenixtoken::open_action vopen(token_account, {get_self(), "active"_n});
   vopen.send(vaccount, WEOSDT_EXT_SYMBOL.get_symbol());
 }
 
@@ -60,13 +60,13 @@ void phoenix::login(const name &vaccount, const eosio::public_key &pubkey) {
   check_running();
   require_auth(get_self());
 
-  vkeys_t vkeys_table(get_self(), get_self().value, 1024, 64, VACCOUNTS_SHARD_PINNING,
-                      false, VACCOUNTS_DELAYED_CLEANUP);
+  vkeys_t vkeys_table(get_self(), get_self().value, 1024, 64,
+                      VACCOUNTS_SHARD_PINNING, false,
+                      VACCOUNTS_DELAYED_CLEANUP);
   auto itr = vkeys_table.find(vaccount.value);
   eosio::check(itr != vkeys_table.end(), "vaccount does not exist");
-  vkeys_table.modify(itr, get_self(), [&](auto &new_key) {
-    new_key.pubkey = pubkey;
-  });
+  vkeys_table.modify(itr, get_self(),
+                     [&](auto &new_key) { new_key.pubkey = pubkey; });
 }
 
 // void phoenix::regaccount_hook(const regaccount_action &action) {
@@ -128,11 +128,11 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
   _users.emplace(get_self(),
                  [&](auto &new_user) { new_user.username = PHOENIX_VACCOUNT; });
   setKey(PHOENIX_FEES_VACCOUNT, phoenix_vaccount_pubkey);
-  _users.emplace(get_self(),
-                 [&](auto &new_user) { new_user.username = PHOENIX_FEES_VACCOUNT; });
+  _users.emplace(get_self(), [&](auto &new_user) {
+    new_user.username = PHOENIX_FEES_VACCOUNT;
+  });
 
-  phoenixtoken::open_action vopen(token_account,
-                                        {get_self(), "active"_n});
+  phoenixtoken::open_action vopen(token_account, {get_self(), "active"_n});
   vopen.send(PHOENIX_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
   vopen.send(PHOENIX_FEES_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
   // create VWEOSDT on token contract & issue all to PHOENIX vaccount
@@ -140,8 +140,8 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
   // const auto max_weosdt_supply =
   //     asset(170'000'000 * 1'000'000'000,
   //           WEOSDT_EXT_SYMBOL.get_symbol()); // 10 billion, same as EOS
-  // phoenixtoken::create_action create(token_account, {get_self(), "active"_n});
-  // create.send(get_self(), max_weosdt_supply);
+  // phoenixtoken::create_action create(token_account, {get_self(),
+  // "active"_n}); create.send(get_self(), max_weosdt_supply);
   // phoenixtoken::issue_action issue(token_account, {get_self(), "active"_n});
   // issue.send(PHOENIX_VACCOUNT, max_weosdt_supply, "init");
 }
@@ -235,7 +235,8 @@ void phoenix::updatepost(updatepost_payload payload) {
 
   const auto post = _posts.find(payload.id);
   check(post != _posts.end(), "post does not exist for this author");
-  check(post->author == payload.vaccount, "you are not the author of this post");
+  check(post->author == payload.vaccount,
+        "you are not the author of this post");
 
   if (payload.delete_post) {
     _users.modify(user, get_self(), [&](auto &u) {
@@ -355,12 +356,27 @@ void phoenix::linkaccount(linkaccount_payload payload) {
                 [&](auto &u) { u.linked_name = payload.account; });
 }
 
+void phoenix::createacc(createacc_payload payload) {
+  check_running();
+  require_vaccount(payload.vaccount);
+
+  const auto user = check_user(payload.vaccount);
+  check(user->created_account == name(""), "you already created a free account");
+  _users.modify(user, get_self(),
+                [&](auto &u) { u.created_account = payload.account_name; });
+
+  phoenixtoken::createacc_action vcreateacc(token_account,
+                                            {get_self(), "active"_n});
+  vcreateacc.send(payload.account_name, payload.pubkey);
+}
+
 void phoenix::on_transfer(eosio::name from, eosio::name to,
                           eosio::asset quantity, std::string memo) {
   check_running();
 
   // accept everything, deny WEOSDT
-  check(get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract(), "WEOSDT must be deposited to the token contract");
+  check(get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract(),
+        "WEOSDT must be deposited to the token contract");
 }
 
 void phoenix::pledge(pledge_payload payload) {
@@ -580,9 +596,11 @@ void phoenix::schedule_renewpledge(const pledge_info &pledge) {
   schedule_timer(name(pledge.id), packed_payload, seconds);
 }
 
-void phoenix::internal_vtransfer(const eosio::name& from, const eosio::name& to, const eosio::asset& quantity, const std::string& memo) {
+void phoenix::internal_vtransfer(const eosio::name &from, const eosio::name &to,
+                                 const eosio::asset &quantity,
+                                 const std::string &memo) {
   phoenixtoken::transfer_action vtransfer(token_account,
-                                         {get_self(), "active"_n});
+                                          {get_self(), "active"_n});
   vtransfer.send(from, to, quantity, memo);
 }
 
@@ -670,7 +688,8 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
   } else if (receiver == code) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (init)(pause)(renewpledge)(signup)(login))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(),
+                            (init)(pause)(renewpledge)(signup)(login))
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (testreset))
 #endif

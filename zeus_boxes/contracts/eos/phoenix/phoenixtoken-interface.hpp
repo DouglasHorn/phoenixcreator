@@ -15,8 +15,9 @@ class phoenixtoken {
   // requires _self auth
   ACTION transfer(name from, name to, asset quantity, string memo);
   // requires vaccount auth
-  ACTION transferv(transferv_payload payload);
+  // ACTION transferv(transferv_payload payload);
   ACTION open(const name &owner, const symbol &symbol);
+  ACTION createacc(name account, eosio::public_key pubkey);
   // ACTION withdraw(const name& owner, const symbol& symbol);
 
   inline asset get_supply(symbol_code sym) const;
@@ -28,4 +29,5 @@ class phoenixtoken {
   using transfer_action =
       eosio::action_wrapper<"transfer"_n, &phoenixtoken::transfer>;
   using open_action = eosio::action_wrapper<"open"_n, &phoenixtoken::open>;
+  using createacc_action = eosio::action_wrapper<"createacc"_n, &phoenixtoken::createacc>;
 };

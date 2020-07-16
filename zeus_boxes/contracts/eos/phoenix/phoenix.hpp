@@ -332,6 +332,13 @@ struct pledge_payload {
                                        autorenew)(next_delete))
 };
 
+struct createacc_payload {
+  name vaccount;
+  name account_name;
+  eosio::public_key pubkey;
+  EOSLIB_SERIALIZE(createacc_payload, (vaccount)(account_name)(pubkey))
+};
+
 struct renewpledge_payload {
   name vaccount;
   name to;
@@ -357,6 +364,7 @@ ACTION updatepost(updatepost_payload payload);
 ACTION follow(follow_payload payload);
 ACTION linkaccount(linkaccount_payload payload);
 ACTION pledge(pledge_payload payload);
+ACTION createacc(createacc_payload payload);
 ACTION renewpledge(renewpledge_payload payload);
 #ifdef __TEST__
 ACTION testreset(uint64_t count);
@@ -379,10 +387,11 @@ using renewpledge_action =
     eosio::action_wrapper<"renewpledge"_n, &phoenix::renewpledge>;
 
 public:
-VACCOUNTS_APPLY(((updateuser_payload)(updateuser))((updatetiers_payload)(
-    updatetiers))((createpost_payload)(createpost))((updatepost_payload)(
-    updatepost))((follow_payload)(follow))((linkaccount_payload)(linkaccount))(
-    (pledge_payload)(pledge))((renewpledge_payload)(renewpledge)))
+VACCOUNTS_APPLY(((updateuser_payload)(updateuser))(
+    (updatetiers_payload)(updatetiers))((createpost_payload)(createpost))(
+    (updatepost_payload)(updatepost))((follow_payload)(follow))(
+    (linkaccount_payload)(linkaccount))((pledge_payload)(pledge))(
+    (createacc_payload)(createacc))((renewpledge_payload)(renewpledge)))
 
 /* helper functions */
 private:

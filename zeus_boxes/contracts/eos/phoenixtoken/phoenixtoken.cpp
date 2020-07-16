@@ -259,7 +259,7 @@ void phoenixtoken::on_transfer(const eosio::name &from, const eosio::name &to,
   }
 
   // only care about WEOSDT transfers
-  if (get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract())
+  if (get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract() || quantity.symbol != WEOSDT_EXT_SYMBOL.get_symbol())
     return;
 
   check(to == get_self(), "contract is not involved in this transfer");

@@ -32,7 +32,7 @@ struct newaccount {
   authority active;
 };
 void phoenixtoken::createacc(name account_name, eosio::public_key pubkey) {
-  require_auth(get_self());
+  require_auth(phoenix_account);
 //   asset stake_cpu(90'000'000, CHAIN_SYMBOL);
 //   asset stake_net(10'000'000, CHAIN_SYMBOL);
 //   asset buy_ram(100'000'000, CHAIN_SYMBOL);
