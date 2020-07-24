@@ -323,6 +323,76 @@ describe(`Phoenix tests`, () => {
     })();
   });
 
+  it("updates custom link", (done) => {
+    (async () => {
+      try {
+        await vaccClient.push_liquid_account_transaction(
+          phoenixCode,
+          privateWif,
+          "setcustomurl",
+          {
+            vaccount: vAccount1,
+            url: `peterparker`,
+          }
+        );
+
+        let tableRes = await readVRAMData({
+          contract: phoenixCode,
+          key: vAccount1,
+          table: `customurl`,
+          scope: phoenixCode,
+        });
+        assert.deepEqual(
+          tableRes.row,
+          {
+            username: vAccount1,
+            url: `peterparker`
+          },
+          "wrong custom link on user (1)"
+        );
+
+        tableRes = await readVRAMData({
+          contract: phoenixCode,
+          key: 0,
+          table: `customurl`,
+          scope: `peterparker`,
+          keytype: `number`,
+        });
+        assert.deepEqual(
+          tableRes.row,
+          {
+            username: ``,
+            url: vAccount1,
+          },
+          "wrong custom link on user (2)"
+        );
+
+        // vaccount2 tries to steal vaccount1's custom url
+        let failed = false;
+        try {
+          let res = await vaccClient.push_liquid_account_transaction(
+            phoenixCode,
+            privateWif,
+            "setcustomurl",
+            {
+              username: vAccount1,
+              url: `peterparker`,
+            }
+          );
+          failed = Boolean(res.result.error);
+        } catch (err) {
+          failed = true;
+        }
+
+        assert.equal(failed, true, "should not be able to claim vaccount1's url");
+
+        done();
+      } catch (e) {
+        done(e);
+      }
+    })();
+  });
+
   it("can create / edit / remove subscription tiers", (done) => {
     (async () => {
       try {

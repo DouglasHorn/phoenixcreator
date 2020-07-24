@@ -109,6 +109,20 @@ void phoenix::setlimits(const uint32_t &max_vaccount_creations_per_day) {
   _limits.set(limit, get_self());
 }
 
+void phoenix::setfeatured(std::vector<name> featured_authors,
+                          std::vector<uint64_t> featured_posts) {
+  require_auth(get_self());
+
+  globals g = get_globals();
+  if (featured_authors.size()) {
+    g.featured_authors = featured_authors;
+  }
+  if (featured_posts.size()) {
+    g.featured_posts = featured_posts;
+  }
+  _globals.set(g, get_self());
+}
+
 void phoenix::pause(bool pause) {
   require_auth(get_self());
 
@@ -135,6 +149,8 @@ void phoenix::init(eosio::public_key phoenix_vaccount_pubkey) {
   phoenixtoken::open_action vopen(token_account, {get_self(), "active"_n});
   vopen.send(PHOENIX_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
   vopen.send(PHOENIX_FEES_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
+
+  // not needed anymore
   // create VWEOSDT on token contract & issue all to PHOENIX vaccount
   // this is done externally because it requires token permission
   // const auto max_weosdt_supply =
@@ -356,12 +372,49 @@ void phoenix::linkaccount(linkaccount_payload payload) {
                 [&](auto &u) { u.linked_name = payload.account; });
 }
 
+void phoenix::setcustomurl(setcustomurl_payload payload) {
+  check_running();
+  require_vaccount(payload.vaccount);
+  check(payload.url.to_string().size() >= 3, "url must be at least 3 characters long");
+  const auto user = check_user(payload.vaccount);
+
+  customurl_table _customurl(get_self(), get_self().value, 1024, 64, false, false,
+                             VACCOUNTS_DELAYED_CLEANUP);
+  auto itr = _customurl.find(payload.vaccount.value);
+  if (itr == _customurl.end()) {
+    _customurl.emplace(get_self(), [&](auto &row) {
+      row.username = payload.vaccount;
+      row.url = payload.url;
+    });
+  } else {
+    _customurl.modify(itr, get_self(),
+                      [&](auto &u) { u.url = payload.url; });
+  }
+
+  // do reverse link
+  _customurl = customurl_table(get_self(), payload.url.value, 1024, 64, false, false,
+                               VACCOUNTS_DELAYED_CLEANUP);
+  itr = _customurl.find(0);
+  if (itr == _customurl.end()) {
+    _customurl.emplace(get_self(), [&](auto &row) {
+      // primary key = 0
+      row.username = name(0);
+      row.url = payload.vaccount;
+    });
+  } else {
+    check(itr->url == payload.vaccount, "custom link claimed by another vaccount");
+    _customurl.modify(itr, get_self(),
+                      [&](auto &u) { u.url = payload.vaccount; });
+  }
+}
+
 void phoenix::createacc(createacc_payload payload) {
   check_running();
   require_vaccount(payload.vaccount);
 
   const auto user = check_user(payload.vaccount);
-  check(user->created_account == name(""), "you already created a free account");
+  check(user->created_account == name(""),
+        "you already created a free account");
   _users.modify(user, get_self(),
                 [&](auto &u) { u.created_account = payload.account_name; });
 
@@ -688,8 +741,8 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
   } else if (receiver == code) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(),
-                            (init)(pause)(renewpledge)(signup)(login))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (init)(setfeatured)(pause)(
+                                                 renewpledge)(signup)(login))
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (testreset))
 #endif

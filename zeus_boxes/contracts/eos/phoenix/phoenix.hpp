@@ -39,6 +39,8 @@ private:
 TABLE globals {
   std::vector<uint64_t> latest_post_indexes = std::vector<uint64_t>{};
   uint64_t next_post_id = 0;
+  std::vector<name> featured_authors = std::vector<name>{};
+  std::vector<uint64_t> featured_posts = std::vector<uint64_t>{};
   bool paused = false;
 };
 // just so it is added to the ABI, as singletons are currently not
@@ -98,6 +100,23 @@ TABLE shardbucket {
 typedef eosio::multi_index<"users"_n, shardbucket> users_table_abi;
 
 users_table _users;
+
+/**
+ * Custom URL path
+ */
+// creates a two way binding by using scopes
+// scope: phoenix && key: urlname => username
+// scope: username && key: 0 => urlname
+struct [[eosio::table]] customurl {
+  name username;
+  name url;
+
+  auto primary_key() const { return username.value; }
+};
+
+typedef dapp::multi_index<name("customurl"), customurl> customurl_table;
+typedef eosio::multi_index<".customurl"_n, customurl> customurl_table_v_abi;
+typedef eosio::multi_index<"customurl"_n, shardbucket> customurl_table_abi;
 
 /**
  * Post
@@ -314,6 +333,12 @@ struct linkaccount_payload {
   EOSLIB_SERIALIZE(linkaccount_payload, (vaccount)(account))
 };
 
+struct setcustomurl_payload {
+  name vaccount;
+  name url;
+  EOSLIB_SERIALIZE(setcustomurl_payload, (vaccount)(url))
+};
+
 // struct withdraw_payload {
 //   name from;
 //   name to_eos_account;
@@ -354,6 +379,7 @@ struct timer_payload {
 
 ACTION init(eosio::public_key phoenix_vaccount_pubkey);
 ACTION setlimits(const uint32_t &max_vaccount_creations_per_day);
+ACTION setfeatured(std::vector<name> featured_authors, std::vector<uint64_t> featured_posts);
 ACTION signup(const name &vaccount, const eosio::public_key &pubkey);
 ACTION login(const name &vaccount, const eosio::public_key &pubkey);
 ACTION pause(bool pause);
@@ -363,6 +389,7 @@ ACTION createpost(createpost_payload payload);
 ACTION updatepost(updatepost_payload payload);
 ACTION follow(follow_payload payload);
 ACTION linkaccount(linkaccount_payload payload);
+ACTION setcustomurl(setcustomurl_payload payload) ;
 ACTION pledge(pledge_payload payload);
 ACTION createacc(createacc_payload payload);
 ACTION renewpledge(renewpledge_payload payload);
@@ -390,7 +417,7 @@ public:
 VACCOUNTS_APPLY(((updateuser_payload)(updateuser))(
     (updatetiers_payload)(updatetiers))((createpost_payload)(createpost))(
     (updatepost_payload)(updatepost))((follow_payload)(follow))(
-    (linkaccount_payload)(linkaccount))((pledge_payload)(pledge))(
+    (linkaccount_payload)(linkaccount))((setcustomurl_payload)(setcustomurl))((pledge_payload)(pledge))(
     (createacc_payload)(createacc))((renewpledge_payload)(renewpledge)))
 
 /* helper functions */

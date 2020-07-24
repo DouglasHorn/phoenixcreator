@@ -9,7 +9,7 @@ const accounts = Object.keys(env.accounts);
 
 const ROOT = accounts[0];
 
-const STAKE_ACC = `phoenixv2t11` // accounts[accounts.length - 1]
+const STAKE_ACC = `phoenixv2c11` // accounts[accounts.length - 1]
 
 const services = [
   {
@@ -34,7 +34,7 @@ const services = [
   },
   {
     provider: `heliosselene`,
-    package: `storage`,
+    package: `storagelarge`,
     service: `liquidstorag`
   },
   {
@@ -99,23 +99,23 @@ async function action() {
 
     if (filteredServices.length === 0) throw new Error(`No services`);
 
-    // await sendTransaction(
-    //   filteredServices.map(service => ({
-    //     account: `dappservices`,
-    //     name: `preselectpkg`,
-    //     authorization: [
-    //       {
-    //         actor: STAKE_ACC,
-    //         permission: `active`
-    //       }
-    //     ],
-    //     data: {
-    //       owner: STAKE_ACC,
-    //       ...service,
-    //       depth: 1,
-    //     }
-    //   }))
-    // );
+    await sendTransaction(
+      filteredServices.map(service => ({
+        account: `dappservices`,
+        name: `preselectpkg`,
+        authorization: [
+          {
+            actor: STAKE_ACC,
+            permission: `active`
+          }
+        ],
+        data: {
+          owner: STAKE_ACC,
+          ...service,
+          depth: 1,
+        }
+      }))
+    );
 
     await sendTransaction(
       filteredServices.map(service => ({
