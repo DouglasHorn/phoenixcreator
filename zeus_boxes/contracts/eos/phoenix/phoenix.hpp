@@ -1,6 +1,6 @@
 #pragma once
 
-// #define __TEST__
+#define __TEST__
 #define __KYLIN__
 #define USE_ADVANCED_IPFS
 // #define USE_IPFS_WARMUPROW
@@ -160,32 +160,21 @@ typedef eosio::multi_index<"postkeyenc"_n, shardbucket> post_key_enc_table_abi;
  * would just be a from,to table with index on both
  * but DAPP network does not support secondary indexes
  * so split it into two tables and duplicate data
+ * scope="from", scope="to"
  */
-struct [[eosio::table]] follows_from_info {
-  name from;
-  std::vector<name> tos;
+struct [[eosio::table]] follows_info {
+  name user;
+  std::vector<name> users;
 
-  auto primary_key() const { return from.value; }
-};
-struct [[eosio::table]] follows_to_info {
-  std::vector<name> froms;
-  name to;
-
-  auto primary_key() const { return to.value; }
+  auto primary_key() const { return user.value; }
 };
 
-typedef dapp::multi_index<name("followsfrom"), follows_from_info>
-    follows_from_table;
-typedef eosio::multi_index<".followsfrom"_n, follows_from_info>
-    follows_from_table_v_abi;
-typedef eosio::multi_index<"followsfrom"_n, shardbucket> follows_from_table_abi;
-typedef dapp::multi_index<name("followsto"), follows_to_info> follows_to_table;
-typedef eosio::multi_index<".followsto"_n, follows_to_info>
-    follows_to_table_v_abi;
-typedef eosio::multi_index<"followsto"_n, shardbucket> follows_to_table_abi;
+typedef dapp::multi_index<name("follows"), follows_info>
+    follows_table;
+typedef eosio::multi_index<".follows"_n, follows_info>
+    follows_table_v_abi;
+typedef eosio::multi_index<"follows"_n, shardbucket> follows_table_abi;
 
-follows_from_table _follows_from;
-follows_to_table _follows_to;
 
 /**
  * Pledges
@@ -224,31 +213,18 @@ struct name_pledge_pair {
   name name;
   uint64_t pledge_id;
 };
-struct [[eosio::table]] pledges_from_info {
-  name from;
-  std::vector<name_pledge_pair> tos;
+struct [[eosio::table]] pledges_rel_info {
+  name user;
+  std::vector<name_pledge_pair> users;
 
-  auto primary_key() const { return from.value; }
-};
-struct [[eosio::table]] pledges_to_info {
-  std::vector<name_pledge_pair> froms;
-  name to;
-
-  auto primary_key() const { return to.value; }
+  auto primary_key() const { return user.value; }
 };
 
-typedef dapp::multi_index<name("pledgesfrom"), pledges_from_info>
-    pledges_from_table;
-typedef eosio::multi_index<".pledgesfrom"_n, pledges_from_info>
-    pledges_from_table_v_abi;
-typedef eosio::multi_index<"pledgesfrom"_n, shardbucket> pledges_from_table_abi;
-typedef dapp::multi_index<name("pledgesto"), pledges_to_info> pledges_to_table;
-typedef eosio::multi_index<".pledgesto"_n, pledges_to_info>
-    pledges_to_table_v_abi;
-typedef eosio::multi_index<"pledgesto"_n, shardbucket> pledges_to_table_abi;
-
-pledges_from_table _pledges_from;
-pledges_to_table _pledges_to;
+typedef dapp::multi_index<name("pledgesrel"), pledges_rel_info>
+    pledges_rel_table;
+typedef eosio::multi_index<".pledgesrel"_n, pledges_rel_info>
+    pledges_rel_table_v_abi;
+typedef eosio::multi_index<"pledgesrel"_n, shardbucket> pledges_rel_table_abi;
 
 // just so it is added to the ABI, as singletons are currently not
 // TABLE vconfig {
@@ -267,16 +243,8 @@ phoenix(name receiver, name code, datastream<const char *> ds)
              VACCOUNTS_DELAYED_CLEANUP),
       _posts(receiver, receiver.value, 1024, 64, false, false,
              VACCOUNTS_DELAYED_CLEANUP),
-      _follows_from(receiver, receiver.value, 1024, 64, false, false,
-                    VACCOUNTS_DELAYED_CLEANUP),
-      _follows_to(receiver, receiver.value, 1024, 64, false, false,
-                  VACCOUNTS_DELAYED_CLEANUP),
       _pledges(receiver, receiver.value, 1024, 64, false, false,
-               VACCOUNTS_DELAYED_CLEANUP),
-      _pledges_from(receiver, receiver.value, 1024, 64, false, false,
-                    VACCOUNTS_DELAYED_CLEANUP),
-      _pledges_to(receiver, receiver.value, 1024, 64, false, false,
-                  VACCOUNTS_DELAYED_CLEANUP) {}
+               VACCOUNTS_DELAYED_CLEANUP) {}
 
 struct updateuser_payload {
   name vaccount;

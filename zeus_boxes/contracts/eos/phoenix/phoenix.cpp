@@ -311,33 +311,38 @@ void phoenix::follow(follow_payload payload) {
   check_user(payload.vaccount);
 
   // update _follows_from
+
+  follows_table _follows_from(get_self(), name("from").value, 1024, 64, false, false,
+                    VACCOUNTS_DELAYED_CLEANUP);
   const auto from_follows = _follows_from.find(payload.vaccount.value);
   if (from_follows == _follows_from.end()) {
     _follows_from.emplace(get_self(), [&](auto &s) {
-      s.from = payload.vaccount;
-      s.tos = std::vector<name>{};
-      diff_vectors(s.tos, payload.follows, payload.unfollows);
+      s.user = payload.vaccount;
+      s.users = std::vector<name>{};
+      diff_vectors(s.users, payload.follows, payload.unfollows);
     });
   } else {
     _follows_from.modify(from_follows, get_self(), [&](auto &s) {
-      diff_vectors(s.tos, payload.follows, payload.unfollows);
+      diff_vectors(s.users, payload.follows, payload.unfollows);
     });
   }
 
   // update _follows_to
+  follows_table _follows_to(get_self(), name("to").value, 1024, 64, false, false,
+                  VACCOUNTS_DELAYED_CLEANUP);
   for (const name follower : payload.follows) {
     check_user(follower);
 
     const auto to_follows = _follows_to.find(follower.value);
     if (to_follows == _follows_to.end()) {
       _follows_to.emplace(get_self(), [&](auto &s) {
-        s.to = follower;
-        diff_vectors(s.froms, std::vector<name>{payload.vaccount},
+        s.user = follower;
+        diff_vectors(s.users, std::vector<name>{payload.vaccount},
                      std::vector<name>{});
       });
     } else {
       _follows_to.modify(to_follows, get_self(), [&](auto &s) {
-        diff_vectors(s.froms, std::vector<name>{payload.vaccount},
+        diff_vectors(s.users, std::vector<name>{payload.vaccount},
                      std::vector<name>{});
       });
     }
@@ -351,7 +356,7 @@ void phoenix::follow(follow_payload payload) {
       // nothing to do
     } else {
       _follows_to.modify(to_follows, get_self(), [&](auto &s) {
-        diff_vectors(s.froms, std::vector<name>{},
+        diff_vectors(s.users, std::vector<name>{},
                      std::vector<name>{payload.vaccount});
       });
     }
@@ -444,12 +449,15 @@ void phoenix::pledge(pledge_payload payload) {
         "invalid token symbol for weosdt_quantity");
   check(payload.weosdt_quantity.amount > 0, "weosdt_quantity must be > 0");
 
+
+  pledges_rel_table _pledges_from(get_self(), name("from").value, 1024, 64, false, false,
+               VACCOUNTS_DELAYED_CLEANUP);
   const auto pledges_from = _pledges_from.find(payload.vaccount.value);
   if (pledges_from == _pledges_from.end()) {
     const uint64_t pledge_id = create_pledge(payload);
     upsert_pledge_relations(payload, pledge_id);
   } else {
-    const auto &tos = pledges_from->tos;
+    const auto &tos = pledges_from->users;
     const auto &pair_itr =
         std::find_if(tos.begin(), tos.end(), [&](const name_pledge_pair &p) {
           return p.name == payload.to;
@@ -491,9 +499,11 @@ void phoenix::renewpledge(renewpledge_payload payload) {
   check_running();
   check_user(payload.to);
   // just a sanity check
+  pledges_rel_table _pledges_to(get_self(), name("from").value, 1024, 64, false, false,
+              VACCOUNTS_DELAYED_CLEANUP);
   const auto pledges_to = _pledges_to.find(payload.to.value);
   check(pledges_to != _pledges_to.end(), "user does not have any pledges");
-  const auto &froms = pledges_to->froms;
+  const auto &froms = pledges_to->users;
   const auto &pair_itr =
       std::find_if(froms.begin(), froms.end(), [&](const name_pledge_pair &p) {
         return p.pledge_id == payload.pledge_id;
@@ -572,41 +582,45 @@ void phoenix::update_pledge(const pledge_payload &payload,
 
 void phoenix::upsert_pledge_relations(const pledge_payload &payload,
                                       uint64_t pledge_id) {
+  pledges_rel_table _pledges_from(get_self(), name("from").value, 1024, 64, false, false,
+               VACCOUNTS_DELAYED_CLEANUP);
   const auto pledges_from = _pledges_from.find(payload.vaccount.value);
   if (pledges_from == _pledges_from.end()) {
     _pledges_from.emplace(get_self(), [&](auto &p) {
-      p.from = payload.vaccount;
-      p.tos = std::vector<name_pledge_pair>{
+      p.user = payload.vaccount;
+      p.users = std::vector<name_pledge_pair>{
           name_pledge_pair{payload.to, pledge_id}};
     });
   } else {
-    const auto &tos = pledges_from->tos;
+    const auto &tos = pledges_from->users;
     const auto &pair_itr =
         std::find_if(tos.begin(), tos.end(), [&](const name_pledge_pair &p) {
           return p.name == payload.to;
         });
     if (pair_itr == tos.end()) {
       _pledges_from.modify(pledges_from, get_self(), [&](auto &p) {
-        p.tos.emplace_back(name_pledge_pair{payload.to, pledge_id});
+        p.users.emplace_back(name_pledge_pair{payload.to, pledge_id});
       });
     };
   }
 
+  pledges_rel_table _pledges_to(get_self(), name("to").value, 1024, 64, false, false,
+               VACCOUNTS_DELAYED_CLEANUP);
   const auto pledges_to = _pledges_to.find(payload.to.value);
   if (pledges_to == _pledges_to.end()) {
     _pledges_to.emplace(get_self(), [&](auto &p) {
-      p.to = payload.to;
-      p.froms = std::vector<name_pledge_pair>{
+      p.user = payload.to;
+      p.users = std::vector<name_pledge_pair>{
           name_pledge_pair{payload.vaccount, pledge_id}};
     });
   } else {
-    const auto &froms = pledges_to->froms;
+    const auto &froms = pledges_to->users;
     const auto &pair_itr = std::find_if(
         froms.begin(), froms.end(),
         [&](const name_pledge_pair &p) { return p.name == payload.vaccount; });
     if (pair_itr == froms.end()) {
       _pledges_to.modify(pledges_to, get_self(), [&](auto &p) {
-        p.froms.emplace_back(name_pledge_pair{payload.vaccount, pledge_id});
+        p.users.emplace_back(name_pledge_pair{payload.vaccount, pledge_id});
       });
     };
   }
@@ -690,15 +704,15 @@ void phoenix::testreset(uint64_t count) {
   }
 
   {
-    auto raw_table = follows_from_table_abi(get_self(), get_self().value);
+    auto raw_table = follows_table_abi(get_self(), name("from").value);
     clear_table(raw_table);
     // _follows_from.clear();
   }
 
   {
-    auto raw_table = follows_to_table_abi(get_self(), get_self().value);
+    auto raw_table = follows_table_abi(get_self(), name("to").value);
     clear_table(raw_table);
-    // _follows_to.clear();
+    // _follows_from.clear();
   }
 
   {
@@ -708,15 +722,15 @@ void phoenix::testreset(uint64_t count) {
   }
 
   {
-    auto raw_table = pledges_from_table_abi(get_self(), get_self().value);
+    auto raw_table = pledges_rel_table_abi(get_self(), name("from").value);
     clear_table(raw_table);
     // _pledges_from.clear();
   }
 
   {
-    auto raw_table = pledges_to_table_abi(get_self(), get_self().value);
+    auto raw_table = pledges_rel_table_abi(get_self(), name("to").value);
     clear_table(raw_table);
-    // _pledges_to.clear();
+    // _pledges_from.clear();
   }
 
   {
