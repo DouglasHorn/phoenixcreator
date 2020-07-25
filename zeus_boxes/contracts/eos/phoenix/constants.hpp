@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __TEST__
+#ifdef __KYLIN__
 static constexpr auto PHOENIX_VACCOUNT = "phoenix"_n;
 static constexpr auto PHOENIX_FEES_VACCOUNT = "fees.phoenix"_n;
 static constexpr name phoenix_account = name("phoenixv2c11");

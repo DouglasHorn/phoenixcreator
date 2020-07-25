@@ -373,39 +373,39 @@ void phoenix::linkaccount(linkaccount_payload payload) {
 }
 
 void phoenix::setcustomurl(setcustomurl_payload payload) {
-  check_running();
-  require_vaccount(payload.vaccount);
-  check(payload.url.to_string().size() >= 3, "url must be at least 3 characters long");
-  const auto user = check_user(payload.vaccount);
+  // check_running();
+  // require_vaccount(payload.vaccount);
+  // check(payload.url.to_string().size() >= 3, "url must be at least 3 characters long");
+  // const auto user = check_user(payload.vaccount);
 
-  customurl_table _customurl(get_self(), get_self().value, 1024, 64, false, false,
-                             VACCOUNTS_DELAYED_CLEANUP);
-  auto itr = _customurl.find(payload.vaccount.value);
-  if (itr == _customurl.end()) {
-    _customurl.emplace(get_self(), [&](auto &row) {
-      row.username = payload.vaccount;
-      row.url = payload.url;
-    });
-  } else {
-    _customurl.modify(itr, get_self(),
-                      [&](auto &u) { u.url = payload.url; });
-  }
+  // customurl_table _customurl(get_self(), get_self().value, 1024, 64, false, false,
+  //                            VACCOUNTS_DELAYED_CLEANUP);
+  // auto itr = _customurl.find(payload.vaccount.value);
+  // if (itr == _customurl.end()) {
+  //   _customurl.emplace(get_self(), [&](auto &row) {
+  //     row.username = payload.vaccount;
+  //     row.url = payload.url;
+  //   });
+  // } else {
+  //   _customurl.modify(itr, get_self(),
+  //                     [&](auto &u) { u.url = payload.url; });
+  // }
 
-  // do reverse link
-  _customurl = customurl_table(get_self(), payload.url.value, 1024, 64, false, false,
-                               VACCOUNTS_DELAYED_CLEANUP);
-  itr = _customurl.find(0);
-  if (itr == _customurl.end()) {
-    _customurl.emplace(get_self(), [&](auto &row) {
-      // primary key = 0
-      row.username = name(0);
-      row.url = payload.vaccount;
-    });
-  } else {
-    check(itr->url == payload.vaccount, "custom link claimed by another vaccount");
-    _customurl.modify(itr, get_self(),
-                      [&](auto &u) { u.url = payload.vaccount; });
-  }
+  // // do reverse link
+  // _customurl = customurl_table(get_self(), payload.url.value, 1024, 64, false, false,
+  //                              VACCOUNTS_DELAYED_CLEANUP);
+  // itr = _customurl.find(0);
+  // if (itr == _customurl.end()) {
+  //   _customurl.emplace(get_self(), [&](auto &row) {
+  //     // primary key = 0
+  //     row.username = name(0);
+  //     row.url = payload.vaccount;
+  //   });
+  // } else {
+  //   check(itr->url == payload.vaccount, "custom link claimed by another vaccount");
+  //   _customurl.modify(itr, get_self(),
+  //                     [&](auto &u) { u.url = payload.vaccount; });
+  // }
 }
 
 void phoenix::createacc(createacc_payload payload) {

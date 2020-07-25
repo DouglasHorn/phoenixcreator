@@ -1,6 +1,7 @@
 #pragma once
 
-#define __TEST__
+// #define __TEST__
+#define __KYLIN__
 #define USE_ADVANCED_IPFS
 // #define USE_IPFS_WARMUPROW
 
@@ -389,7 +390,7 @@ ACTION createpost(createpost_payload payload);
 ACTION updatepost(updatepost_payload payload);
 ACTION follow(follow_payload payload);
 ACTION linkaccount(linkaccount_payload payload);
-ACTION setcustomurl(setcustomurl_payload payload) ;
+ACTION setcustomurl(setcustomurl_payload payload);
 ACTION pledge(pledge_payload payload);
 ACTION createacc(createacc_payload payload);
 ACTION renewpledge(renewpledge_payload payload);
@@ -400,15 +401,6 @@ void on_transfer(eosio::name from, eosio::name to, eosio::asset quantity,
                  std::string memo);
 bool timer_callback(name timer, std::vector<char> payload, uint32_t seconds);
 
-// static void check_user(const name& phoenix_contract, const name& name) {
-//   users_table _phoenixusers(phoenix_contract, phoenix_contract.value, 1024,
-//   64,
-//                             false, false, VACCOUNTS_DELAYED_CLEANUP);
-//   const auto user = _phoenixusers.find(name.value);
-//   check(user != _phoenixusers.end(), "user does not exist in " +
-//                                          phoenix_contract.to_string() + ": "
-//                                          + name.to_string());
-// }
 
 using renewpledge_action =
     eosio::action_wrapper<"renewpledge"_n, &phoenix::renewpledge>;
