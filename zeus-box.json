@@ -18,6 +18,7 @@
     "dependencies": {
         "dapp": "",
         "helloworld": "",
-        "all-dapp-services": ""
+        "all-dapp-services": "",
+        "liquidx": ""
     }
 }

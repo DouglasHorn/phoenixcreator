@@ -21,6 +21,7 @@ zeus_boxes/contracts/*
 zeus_boxes/contracts/eos/*
 !zeus_boxes/contracts/eos/phoenix
 !zeus_boxes/contracts/eos/phoenixtoken
+!zeus_boxes/contracts/eos/CMakeLists.txt
 
 !zeus_boxes/test
 zeus_boxes/test/*
@@ -31,6 +32,10 @@ zeus_boxes/start-localenv/*
 !zeus_boxes/start-localenv/02-*
 !zeus_boxes/start-localenv/05-*
 !zeus_boxes/start-localenv/21-*
+
+!zeus_boxes/liquidx
+zeus_boxes/liquidx/*
+!zeus_boxes/liquidx/models
 
 *.sqlite
 logs/*

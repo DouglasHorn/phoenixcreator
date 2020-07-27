@@ -7,9 +7,13 @@ static constexpr name phoenix_account = name("phoenixv2c11");
 static constexpr name token_account = name("phoenixv2t11");
 static constexpr name dsp_name = eosio::name("airdropsdac1");
 
+#ifdef __TEST__
+static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
+                                               name("eosio.token")};
+#else
 static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
                                                name("ibc1eos1tok3")};
-
+#endif
 
 static constexpr symbol CHAIN_SYMBOL = eosio::symbol("EOS", 4);
 

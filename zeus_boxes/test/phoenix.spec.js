@@ -737,33 +737,33 @@ describe(`Phoenix tests`, () => {
         let tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount1,
-          table: `followsfrom`,
-          scope: phoenixCode,
+          table: `follows`,
+          scope: `from`,
         });
         assert.deepEqual(
-          tableRes.row.tos,
+          tableRes.row.users,
           [vAccount2, vAccount3],
           "wrong follows from vAccount1"
         );
         tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount2,
-          table: `followsto`,
-          scope: phoenixCode,
+          table: `follows`,
+          scope: `to`,
         });
         assert.deepEqual(
-          tableRes.row.froms,
+          tableRes.row.users,
           [vAccount1],
           "wrong follows to vAccount2"
         );
         tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount3,
-          table: `followsto`,
-          scope: phoenixCode,
+          table: `follows`,
+          scope: `to`,
         });
         assert.deepEqual(
-          tableRes.row.froms,
+          tableRes.row.users,
           [vAccount1],
           "wrong follows to vAccount3"
         );
@@ -785,22 +785,22 @@ describe(`Phoenix tests`, () => {
         tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount1,
-          table: `followsfrom`,
-          scope: phoenixCode,
+          table: `follows`,
+          scope: `from`,
         });
         assert.deepEqual(
-          tableRes.row.tos,
+          tableRes.row.users,
           [vAccount3],
           "wrong follows from vAccount1 after unfollow"
         );
         tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount2,
-          table: `followsto`,
-          scope: phoenixCode,
+          table: `follows`,
+          scope: `to`,
         });
         assert.deepEqual(
-          tableRes.row.froms,
+          tableRes.row.users,
           [],
           "wrong follows to vAccount2 after unfollow"
         );
@@ -960,8 +960,8 @@ describe(`Phoenix tests`, () => {
         tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount1,
-          table: `pledgesfrom`,
-          scope: phoenixCode,
+          table: `pledgesrel`,
+          scope: `from`,
         });
         assert.deepEqual(
           tableRes.row,
@@ -972,8 +972,8 @@ describe(`Phoenix tests`, () => {
         tableRes = await readVRAMData({
           contract: phoenixCode,
           key: vAccount2,
-          table: `pledgesto`,
-          scope: phoenixCode,
+          table: `pledgesrel`,
+          scope: `to`,
         });
         assert.deepEqual(
           tableRes.row,
