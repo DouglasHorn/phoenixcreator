@@ -109,8 +109,8 @@ users_table _users;
  * Custom URL path
  */
 // creates a two way binding by using scopes
-// scope: phoenix && key: urlname => username
-// scope: username && key: 0 => urlname
+// scope: phoenix && key: username => url in url
+// scope: url && key: 0 => username in url
 struct [[eosio::table]] customurl {
   name username;
   name url;
@@ -202,6 +202,7 @@ struct [[eosio::table]] pledge_info {
   eosio::asset next_weosdt_quantity = asset(0, WEOSDT_EXT_SYMBOL.get_symbol());
   /* remove the pledge after next cycle */
   bool next_delete = false;
+  bool paid = false;
 
   auto primary_key() const { return id; }
 };
