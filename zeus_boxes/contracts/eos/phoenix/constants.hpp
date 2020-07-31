@@ -12,7 +12,7 @@ static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
                                                name("eosio.token")};
 #else
 static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
-                                               name("ibc1eos1tok3")};
+                                               name("weosdttoken2")};
 #endif
 
 static constexpr symbol CHAIN_SYMBOL = eosio::symbol("EOS", 4);

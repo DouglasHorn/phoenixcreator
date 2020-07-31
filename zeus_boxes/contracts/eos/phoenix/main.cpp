@@ -159,17 +159,87 @@ void phoenix::updateuser(const updateuser_payload &payload) {
   check_running();
   require_vaccount(payload.vaccount);
   auto user = check_user(payload.vaccount);
+  check(payload.new_profile_info.description.size() < 400,
+        "description must be less than 400 chars");
+  check(payload.new_profile_info.displayName.size() < 100,
+        "name must be less than 100 chars");
+  check(payload.new_profile_info.headerSrc.size() < 255,
+        "header must be less than 255 chars");
+  check(payload.new_profile_info.website.size() < 255,
+        "website must be less than 255 chars");
+
+  const set<name> valid_socials = set<name>{
+      // EOSIO system accounts
+      "twitter"_n,
+      "facebook"_n,
+      "linkedin"_n,
+      "medium"_n,
+  };
+
+  for (auto social_entry : payload.new_profile_info.social) {
+    check(valid_socials.find(social_entry.first) != valid_socials.end(),
+          "invalid social brand");
+    check(social_entry.second.size() < 50,
+          "social names must be less than 50 chars");
+  }
 
   _users.modify(user, get_self(),
                 [&](auto &u) { u.profile_info = payload.new_profile_info; });
+
+  // update url?
+  if (payload.url == name(""))
+    return;
+
+  check(payload.url.suffix() != name("phnx"),
+        "phnx suffix may not be used in a custom url");
+  check(payload.url.to_string().size() >= 3,
+        "url must be at least 3 characters long");
+
+  customurl_table _customurl(get_self(), get_self().value, 1024, 64, false,
+                             false, VACCOUNTS_DELAYED_CLEANUP);
+  auto itr = _customurl.find(payload.vaccount.value);
+  if (itr == _customurl.end()) {
+    _customurl.emplace(get_self(), [&](auto &row) {
+      row.username = payload.vaccount;
+      row.url = payload.url;
+    });
+  } else {
+    _customurl.modify(itr, get_self(), [&](auto &u) { u.url = payload.url; });
+  }
+
+  // do reverse link
+  _customurl = customurl_table(get_self(), payload.url.value, 1024, 64, false,
+                               false, VACCOUNTS_DELAYED_CLEANUP);
+  itr = _customurl.find(0);
+  if (itr == _customurl.end()) {
+    _customurl.emplace(get_self(), [&](auto &row) {
+      // primary key = 0
+      row.username = name(0);
+      row.url = payload.vaccount;
+    });
+  } else {
+    check(itr->url == payload.vaccount,
+          "custom link claimed by another vaccount");
+    _customurl.modify(itr, get_self(),
+                      [&](auto &u) { u.url = payload.vaccount; });
+  }
 }
 
 void phoenix::updatetiers(const updatetiers_payload &payload) {
   check_running();
   require_vaccount(payload.vaccount);
   auto user = check_user(payload.vaccount);
-  check(payload.new_tiers.size() <= 5, "cannot have more than 5 tiers");
 
+  check(payload.new_tiers.size() <= 5, "cannot have more than 5 tiers");
+  for (auto tier : payload.new_tiers) {
+    check(tier.title.size() < 150, "title must be less than 150 chars");
+    check(tier.description.size() < 400,
+          "description must be less than 400 chars");
+    check(tier.benefits.size(), "a maximum of 5 benefits is allowed");
+    for (auto benefit : tier.benefits) {
+      check(benefit.size() <= 100, "benefits cannot be longer than 100 chars");
+    }
+  }
   _users.modify(user, get_self(),
                 [&](auto &u) { u.tiers = payload.new_tiers; });
 }
@@ -305,8 +375,8 @@ void phoenix::follow(follow_payload payload) {
 
   // update _follows_from
 
-  follows_table _follows_from(get_self(), name("from").value, 1024, 64, false, false,
-                    VACCOUNTS_DELAYED_CLEANUP);
+  follows_table _follows_from(get_self(), name("from").value, 1024, 64, false,
+                              false, VACCOUNTS_DELAYED_CLEANUP);
   const auto from_follows = _follows_from.find(payload.vaccount.value);
   if (from_follows == _follows_from.end()) {
     _follows_from.emplace(get_self(), [&](auto &s) {
@@ -321,8 +391,8 @@ void phoenix::follow(follow_payload payload) {
   }
 
   // update _follows_to
-  follows_table _follows_to(get_self(), name("to").value, 1024, 64, false, false,
-                  VACCOUNTS_DELAYED_CLEANUP);
+  follows_table _follows_to(get_self(), name("to").value, 1024, 64, false,
+                            false, VACCOUNTS_DELAYED_CLEANUP);
   for (const name follower : payload.follows) {
     check_user(follower);
 
@@ -368,42 +438,6 @@ void phoenix::linkaccount(linkaccount_payload payload) {
 
   _users.modify(user, get_self(),
                 [&](auto &u) { u.linked_name = payload.account; });
-}
-
-void phoenix::setcustomurl(setcustomurl_payload payload) {
-  check_running();
-  require_vaccount(payload.vaccount);
-  check(payload.url.to_string().size() >= 3, "url must be at least 3 characters long");
-  const auto user = check_user(payload.vaccount);
-
-  customurl_table _customurl(get_self(), get_self().value, 1024, 64, false, false,
-                             VACCOUNTS_DELAYED_CLEANUP);
-  auto itr = _customurl.find(payload.vaccount.value);
-  if (itr == _customurl.end()) {
-    _customurl.emplace(get_self(), [&](auto &row) {
-      row.username = payload.vaccount;
-      row.url = payload.url;
-    });
-  } else {
-    _customurl.modify(itr, get_self(),
-                      [&](auto &u) { u.url = payload.url; });
-  }
-
-  // do reverse link
-  _customurl = customurl_table(get_self(), payload.url.value, 1024, 64, false, false,
-                               VACCOUNTS_DELAYED_CLEANUP);
-  itr = _customurl.find(0);
-  if (itr == _customurl.end()) {
-    _customurl.emplace(get_self(), [&](auto &row) {
-      // primary key = 0
-      row.username = name(0);
-      row.url = payload.vaccount;
-    });
-  } else {
-    check(itr->url == payload.vaccount, "custom link claimed by another vaccount");
-    _customurl.modify(itr, get_self(),
-                      [&](auto &u) { u.url = payload.vaccount; });
-  }
 }
 
 void phoenix::createacc(createacc_payload payload) {

@@ -253,7 +253,8 @@ phoenix(name receiver, name code, datastream<const char *> ds)
 struct updateuser_payload {
   name vaccount;
   user_profile_info new_profile_info;
-  EOSLIB_SERIALIZE(updateuser_payload, (vaccount)(new_profile_info))
+  name url;
+  EOSLIB_SERIALIZE(updateuser_payload, (vaccount)(new_profile_info)(url))
 };
 
 struct updatetiers_payload {
@@ -306,12 +307,6 @@ struct linkaccount_payload {
   EOSLIB_SERIALIZE(linkaccount_payload, (vaccount)(account))
 };
 
-struct setcustomurl_payload {
-  name vaccount;
-  name url;
-  EOSLIB_SERIALIZE(setcustomurl_payload, (vaccount)(url))
-};
-
 // struct withdraw_payload {
 //   name from;
 //   name to_eos_account;
@@ -362,7 +357,6 @@ ACTION createpost(createpost_payload payload);
 ACTION updatepost(updatepost_payload payload);
 ACTION follow(follow_payload payload);
 ACTION linkaccount(linkaccount_payload payload);
-ACTION setcustomurl(setcustomurl_payload payload);
 ACTION pledge(pledge_payload payload);
 ACTION createacc(createacc_payload payload);
 ACTION renewpledge(renewpledge_payload payload);
@@ -381,7 +375,7 @@ public:
 VACCOUNTS_APPLY(((updateuser_payload)(updateuser))(
     (updatetiers_payload)(updatetiers))((createpost_payload)(createpost))(
     (updatepost_payload)(updatepost))((follow_payload)(follow))(
-    (linkaccount_payload)(linkaccount))((setcustomurl_payload)(setcustomurl))((pledge_payload)(pledge))(
+    (linkaccount_payload)(linkaccount))((pledge_payload)(pledge))(
     (createacc_payload)(createacc))((renewpledge_payload)(renewpledge)))
 
 /* helper functions */
