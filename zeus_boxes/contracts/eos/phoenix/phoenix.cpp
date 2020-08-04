@@ -93,7 +93,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (init)(setfeatured)(pause)(
-                                                 renewpledge)(signup)(login))
+                                                 renewpledge)(signup)(login)(logcreateacc))
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (testreset))
 #endif

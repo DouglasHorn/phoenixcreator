@@ -325,13 +325,6 @@ struct pledge_payload {
                                        autorenew)(next_delete))
 };
 
-struct createacc_payload {
-  name vaccount;
-  name account_name;
-  eosio::public_key pubkey;
-  EOSLIB_SERIALIZE(createacc_payload, (vaccount)(account_name)(pubkey))
-};
-
 struct renewpledge_payload {
   name vaccount;
   name to;
@@ -351,6 +344,8 @@ ACTION setfeatured(std::vector<name> featured_authors, std::vector<uint64_t> fea
 ACTION signup(const name &vaccount, const eosio::public_key &pubkey);
 ACTION login(const name &vaccount, const eosio::public_key &pubkey);
 ACTION pause(bool pause);
+ACTION logcreateacc(name vaccount, name created_account, eosio::public_key pubkey);
+
 ACTION updateuser(const updateuser_payload &payload);
 ACTION updatetiers(const updatetiers_payload &payload);
 ACTION createpost(createpost_payload payload);
@@ -358,7 +353,6 @@ ACTION updatepost(updatepost_payload payload);
 ACTION follow(follow_payload payload);
 ACTION linkaccount(linkaccount_payload payload);
 ACTION pledge(pledge_payload payload);
-ACTION createacc(createacc_payload payload);
 ACTION renewpledge(renewpledge_payload payload);
 #ifdef __TEST__
 ACTION testreset(uint64_t count);
@@ -375,8 +369,7 @@ public:
 VACCOUNTS_APPLY(((updateuser_payload)(updateuser))(
     (updatetiers_payload)(updatetiers))((createpost_payload)(createpost))(
     (updatepost_payload)(updatepost))((follow_payload)(follow))(
-    (linkaccount_payload)(linkaccount))((pledge_payload)(pledge))(
-    (createacc_payload)(createacc))((renewpledge_payload)(renewpledge)))
+    (linkaccount_payload)(linkaccount))((pledge_payload)(pledge))((renewpledge_payload)(renewpledge)))
 
 /* helper functions */
 private:

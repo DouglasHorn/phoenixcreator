@@ -28,7 +28,8 @@ using std::string;
 using namespace std;
 using namespace eosio;
 
-namespace phoenix {
+class phoenix {
+  public:
 /**
  * User
  */
@@ -70,4 +71,6 @@ TABLE shardbucket {
 };
 typedef eosio::multi_index<"users"_n, shardbucket> users_table_abi;
 
-} // namespace phoenix
+ACTION logcreateacc(name vaccount, name created_account, eosio::public_key pubkey);
+using logcreateacc_action = eosio::action_wrapper<"logcreateacc"_n, &phoenix::logcreateacc>;
+};

@@ -64,7 +64,8 @@ void phoenixtoken::transfer(name from, name to, asset quantity, string memo) {
   check_running();
   // invoked through transferv as an inline action from vaccounts
   // or from phoenix::pay_pledge as an inline action
-  check(has_auth(get_self()) || has_auth(phoenix_account), "use the transferv action for transfers from vaccounts");
+  check(has_auth(get_self()) || has_auth(phoenix_account),
+        "use the transferv action for transfers from vaccounts");
   eosio::check(from != to, "cannot transfer to self");
   phoenixtoken::check_user(from);
   phoenixtoken::check_user(to);
@@ -123,7 +124,7 @@ void phoenixtoken::withdrawv(withdrawv_payload payload) {
   // burn: update virtual token balance: "from" -> "phoenix"
   _transfer(payload.vaccount, PHOENIX_VACCOUNT, payload.quantity);
   transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
-                                         {get_self(), "active"_n});
+                                  {get_self(), "active"_n});
   // send real token "self" -> "to"
   withdraw_action.send(get_self(), payload.to_eos_account, payload.quantity,
                        "Phoenix Withdraw");
@@ -134,17 +135,16 @@ void phoenixtoken::payoutfees(name to) {
   require_auth(get_self());
 
   check_user(PHOENIX_FEES_VACCOUNT);
-  check(is_account(to),
-        "withdrawal eos account does not exist");
+  check(is_account(to), "withdrawal eos account does not exist");
 
-  auto fees = get_balance(PHOENIX_FEES_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
+  auto fees =
+      get_balance(PHOENIX_FEES_VACCOUNT, WEOSDT_EXT_SYMBOL.get_symbol());
   // burn: update virtual token balance: "from" -> "phoenix"
   _transfer(PHOENIX_FEES_VACCOUNT, PHOENIX_VACCOUNT, fees);
   transfer_action withdraw_action(WEOSDT_EXT_SYMBOL.get_contract(),
-                                         {get_self(), "active"_n});
+                                  {get_self(), "active"_n});
   // send real token "self" -> "to"
-  withdraw_action.send(get_self(), to, fees,
-                       "fees payout");
+  withdraw_action.send(get_self(), to, fees, "fees payout");
 }
 
 void phoenixtoken::_transfer(const name &from, const name &to,
@@ -259,8 +259,11 @@ void phoenixtoken::on_transfer(const eosio::name &from, const eosio::name &to,
   }
 
   // only care about WEOSDT transfers
-  if (get_first_receiver() != WEOSDT_EXT_SYMBOL.get_contract() || quantity.symbol != WEOSDT_EXT_SYMBOL.get_symbol())
+  if (quantity.symbol != WEOSDT_EXT_SYMBOL.get_symbol())
     return;
+
+  check(get_first_receiver() == WEOSDT_EXT_SYMBOL.get_contract(),
+        "WEOSDT contract mismatch");
 
   check(to == get_self(), "contract is not involved in this transfer");
   check(quantity.symbol.is_valid(), "invalid quantity");
@@ -281,14 +284,14 @@ void phoenixtoken::on_transfer(const eosio::name &from, const eosio::name &to,
 // EOSIO_DISPATCH_SVC_TRX(CONTRACT_NAME(), (login)(renewpledge))
 extern "C" {
 void apply(uint64_t receiver, uint64_t code, uint64_t action) {
-  if (code == WEOSDT_EXT_SYMBOL.get_contract().value &&
-      action == "transfer"_n.value) {
+  if (code != receiver && action == "transfer"_n.value) {
     eosio::execute_action(eosio::name(receiver), eosio::name(code),
                           &CONTRACT_NAME()::on_transfer);
   } else if (receiver == code) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
-      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (create)(issue)(transfer)(open)(createacc))
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(),
+                            (create)(issue)(transfer)(open)(createacc))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit)(xvinit))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xsignal))
     default:

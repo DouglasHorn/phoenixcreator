@@ -1,7 +1,7 @@
 #pragma once
 
-#define __TEST__
-#define __KYLIN__
+// #define __TEST__
+// #define __KYLIN__
 
 // #define LIQUIDX
 
@@ -60,6 +60,11 @@ struct withdrawv_payload {
   asset quantity;
   EOSLIB_SERIALIZE(withdrawv_payload, (vaccount)(to_eos_account)(quantity))
 };
+struct createacc_payload {
+  name vaccount;
+  eosio::public_key pubkey;
+  EOSLIB_SERIALIZE(createacc_payload, (vaccount)(pubkey))
+};
 
 ACTION create(name issuer, asset maximum_supply);
 ACTION issue(name to, asset quantity, string memo);
@@ -70,7 +75,7 @@ ACTION transferv(transferv_payload payload);
 ACTION open(const name &owner, const symbol &symbol);
 ACTION withdrawv(withdrawv_payload payload);
 ACTION payoutfees(name to);
-ACTION createacc(name account, eosio::public_key pubkey);
+ACTION createacc(createacc_payload payload);
 void on_transfer(const eosio::name &from, const eosio::name &to,
                  const eosio::asset &quantity, const std::string &memo);
 
@@ -120,7 +125,8 @@ public:
 phoenixtoken(name receiver, name code, datastream<const char *> ds)
     : contract(receiver, code, ds), _globals(receiver, receiver.value) {}
 
-VACCOUNTS_APPLY(((transferv_payload)(transferv))((withdrawv_payload)(withdrawv)))
+VACCOUNTS_APPLY(((transferv_payload)(transferv))(
+    (withdrawv_payload)(withdrawv))((createacc_payload)(createacc)))
 
 private:
 globals get_globals() {

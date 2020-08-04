@@ -1,3 +1,4 @@
+#include "constants.hpp"
 auto phoenix::check_user(const name &name) {
   const auto user = _users.find(name.value);
   check(user != _users.end(), "user does not exist: " + name.to_string());
@@ -170,10 +171,11 @@ void phoenix::updateuser(const updateuser_payload &payload) {
 
   const set<name> valid_socials = set<name>{
       // EOSIO system accounts
-      "twitter"_n,
       "facebook"_n,
-      "linkedin"_n,
-      "medium"_n,
+      "instagram"_n,
+      "twitch"_n,
+      "twitter"_n,
+      "youtube"_n,
   };
 
   for (auto social_entry : payload.new_profile_info.social) {
@@ -233,9 +235,9 @@ void phoenix::updatetiers(const updatetiers_payload &payload) {
   check(payload.new_tiers.size() <= 5, "cannot have more than 5 tiers");
   for (auto tier : payload.new_tiers) {
     check(tier.title.size() < 150, "title must be less than 150 chars");
-    check(tier.description.size() < 400,
-          "description must be less than 400 chars");
-    check(tier.benefits.size(), "a maximum of 5 benefits is allowed");
+    check(tier.description.size() <= 144,
+          "description must be less than 144 chars");
+    check(tier.benefits.size() <= 5, "a maximum of 5 benefits is allowed");
     for (auto benefit : tier.benefits) {
       check(benefit.size() <= 100, "benefits cannot be longer than 100 chars");
     }
@@ -440,19 +442,15 @@ void phoenix::linkaccount(linkaccount_payload payload) {
                 [&](auto &u) { u.linked_name = payload.account; });
 }
 
-void phoenix::createacc(createacc_payload payload) {
+void phoenix::logcreateacc(name vaccount, name created_account, eosio::public_key pubkey) {
   check_running();
-  require_vaccount(payload.vaccount);
+  require_auth(token_account);
 
-  const auto user = check_user(payload.vaccount);
+  const auto user = check_user(vaccount);
   check(user->created_account == name(""),
         "you already created a free account");
   _users.modify(user, get_self(),
-                [&](auto &u) { u.created_account = payload.account_name; });
-
-  phoenixtoken::createacc_action vcreateacc(token_account,
-                                            {get_self(), "active"_n});
-  vcreateacc.send(payload.account_name, payload.pubkey);
+                [&](auto &u) { u.created_account = created_account; });
 }
 
 void phoenix::on_transfer(eosio::name from, eosio::name to,
