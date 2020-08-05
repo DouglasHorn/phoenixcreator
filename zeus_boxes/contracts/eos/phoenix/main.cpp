@@ -10,7 +10,8 @@ void phoenix::check_running() {
   check(!g.paused, "contract is currently under maintenance. Check back soon");
 }
 
-void phoenix::signup(const name &vaccount, const eosio::public_key &pubkey) {
+void phoenix::signup(const name &vaccount, const eosio::public_key &pubkey,
+                     const uint64_t &checksum) {
   check_running();
   require_auth(get_self());
 
@@ -42,15 +43,18 @@ void phoenix::signup(const name &vaccount, const eosio::public_key &pubkey) {
   check(vaccount.to_string().length() >= 4 &&
             vaccount.to_string().length() <= 12,
         "username must be between 4 and 12 characters");
-  _users.emplace(get_self(),
-                 [&](auto &new_user) { new_user.username = vaccount; });
+  _users.emplace(get_self(), [&](auto &new_user) {
+    new_user.username = vaccount;
+    new_user.checksum = checksum;
+  });
 
   // open token balances
   phoenixtoken::open_action vopen(token_account, {get_self(), "active"_n});
   vopen.send(vaccount, WEOSDT_EXT_SYMBOL.get_symbol());
 }
 
-void phoenix::login(const name &vaccount, const eosio::public_key &pubkey) {
+void phoenix::login(const name &vaccount, const eosio::public_key &pubkey,
+                    const uint64_t &checksum) {
   check_running();
   require_auth(get_self());
 
@@ -61,6 +65,9 @@ void phoenix::login(const name &vaccount, const eosio::public_key &pubkey) {
   eosio::check(itr != vkeys_table.end(), "vaccount does not exist");
   vkeys_table.modify(itr, get_self(),
                      [&](auto &new_key) { new_key.pubkey = pubkey; });
+
+  auto user = check_user(vaccount);
+  check(user->checksum == checksum, "checksum mismatch");
 }
 
 // void phoenix::regaccount_hook(const regaccount_action &action) {
@@ -171,11 +178,7 @@ void phoenix::updateuser(const updateuser_payload &payload) {
 
   const set<name> valid_socials = set<name>{
       // EOSIO system accounts
-      "facebook"_n,
-      "instagram"_n,
-      "twitch"_n,
-      "twitter"_n,
-      "youtube"_n,
+      "facebook"_n, "instagram"_n, "twitch"_n, "twitter"_n, "youtube"_n,
   };
 
   for (auto social_entry : payload.new_profile_info.social) {
@@ -442,7 +445,8 @@ void phoenix::linkaccount(linkaccount_payload payload) {
                 [&](auto &u) { u.linked_name = payload.account; });
 }
 
-void phoenix::logcreateacc(name vaccount, name created_account, eosio::public_key pubkey) {
+void phoenix::logcreateacc(name vaccount, name created_account,
+                           eosio::public_key pubkey) {
   check_running();
   require_auth(token_account);
 

@@ -1,7 +1,7 @@
 #pragma once
 
-// #define __TEST__
-// #define __KYLIN__
+#define __TEST__
+#define __KYLIN__
 
 // #define LIQUIDX
 

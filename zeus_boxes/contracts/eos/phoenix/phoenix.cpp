@@ -18,18 +18,17 @@ inline void clear_table(multi_index<A, B, C...> &table) {
 }
 void phoenix::testreset(uint64_t count) {
   require_auth(get_self());
-  print("testreset");
 
   {
     auto raw_table = users_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    // _users.clear();
+    _users.clear();
   }
 
   {
     auto raw_table = posts_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    // _posts.clear();
+    _posts.clear();
   }
 
   {
@@ -37,37 +36,45 @@ void phoenix::testreset(uint64_t count) {
     clear_table(raw_table);
     post_key_enc_table _posts_keys(get_self(), dsp_name.value, 1024, 64, false,
                                    false, VACCOUNTS_DELAYED_CLEANUP);
-    // _posts_keys.clear();
+    _posts_keys.clear();
   }
 
   {
     auto raw_table = follows_table_abi(get_self(), name("from").value);
     clear_table(raw_table);
-    // _follows_from.clear();
+    follows_table _follows_from(get_self(), name("from").value, 1024, 64, false, false,
+            VACCOUNTS_DELAYED_CLEANUP);
+    _follows_from.clear();
   }
 
   {
     auto raw_table = follows_table_abi(get_self(), name("to").value);
     clear_table(raw_table);
-    // _follows_from.clear();
+    follows_table _follows_to(get_self(), name("to").value, 1024, 64, false, false,
+            VACCOUNTS_DELAYED_CLEANUP);
+    _follows_to.clear();
   }
 
   {
     auto raw_table = pledges_table_abi(get_self(), get_self().value);
     clear_table(raw_table);
-    // _pledges.clear();
+    _pledges.clear();
   }
 
   {
     auto raw_table = pledges_rel_table_abi(get_self(), name("from").value);
     clear_table(raw_table);
-    // _pledges_from.clear();
+    pledges_rel_table _pledges_from(get_self(), name("from").value, 1024, 64, false, false,
+               VACCOUNTS_DELAYED_CLEANUP);
+    _pledges_from.clear();
   }
 
   {
     auto raw_table = pledges_rel_table_abi(get_self(), name("to").value);
     clear_table(raw_table);
-    // _pledges_from.clear();
+    pledges_rel_table _pledges_to(get_self(), name("to").value, 1024, 64, false, false,
+               VACCOUNTS_DELAYED_CLEANUP);
+    _pledges_to.clear();
   }
 
   {
@@ -79,6 +86,8 @@ void phoenix::testreset(uint64_t count) {
     auto raw_table = vkeys_t_abi(get_self(), get_self().value);
     clear_table(raw_table);
   }
+
+  _globals.remove();
 }
 #endif
 

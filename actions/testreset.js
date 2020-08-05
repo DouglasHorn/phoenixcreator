@@ -7,7 +7,7 @@ const { sendTransaction, env } = initEnvironment(
 
 const accounts = Object.keys(env.accounts);
 
-const CONTRACT_ACCOUNT = accounts[accounts.length - 1];
+const CONTRACT_ACCOUNT = accounts[accounts.length - 2];
 
 async function action() {
   try {

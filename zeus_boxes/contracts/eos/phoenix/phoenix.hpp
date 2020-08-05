@@ -90,6 +90,10 @@ struct [[eosio::table]] user_info {
   // as there's no support for secondary indexes on vRAM, we need to keep the
   // "foreign key" relationships in the user
   std::vector<uint64_t> post_indexes = std::vector<uint64_t>{};
+  // first 64bits of email derivation hash
+  // checked when setting new key, needed for security as easy
+  // to do email -> account name collisions (31^7)
+  uint64_t checksum;
 
   auto primary_key() const { return username.value; }
 };
@@ -341,8 +345,8 @@ struct timer_payload {
 ACTION init(eosio::public_key phoenix_vaccount_pubkey);
 ACTION setlimits(const uint32_t &max_vaccount_creations_per_day);
 ACTION setfeatured(std::vector<name> featured_authors, std::vector<uint64_t> featured_posts);
-ACTION signup(const name &vaccount, const eosio::public_key &pubkey);
-ACTION login(const name &vaccount, const eosio::public_key &pubkey);
+ACTION signup(const name &vaccount, const eosio::public_key &pubkey, const uint64_t &checksum);
+ACTION login(const name &vaccount, const eosio::public_key &pubkey, const uint64_t &checksum);
 ACTION pause(bool pause);
 ACTION logcreateacc(name vaccount, name created_account, eosio::public_key pubkey);
 
