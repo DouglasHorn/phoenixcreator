@@ -7,30 +7,29 @@ const { sendTransaction, env } = initEnvironment(
 
 const accounts = Object.keys(env.accounts);
 
-const ROOT_ACCOUNT = accounts[0];
 const CONTRACT_ACCOUNT = accounts[accounts.length - 2];
+const TOKEN_ACCOUNT = accounts[accounts.length - 1];
 
 async function action() {
   try {
     await sendTransaction({
-      account: CONTRACT_ACCOUNT,
-      name: `signup`,
+      account: TOKEN_ACCOUNT,
+      name: `test`,
       authorization: [
         {
-          actor: CONTRACT_ACCOUNT,
-          permission: `active`,
-        },
+          actor: TOKEN_ACCOUNT,
+          permission: `active`
+        }
       ],
       data: {
-        vaccount: `tester1.phnx`,
-        pubkey: `EOS8Rf2CuK26Lj5Xfmc5x7xSupoidfJLt1HjDwuTJEWUWNj6Y9Qsb`,
-        checksum: 0,
-      },
+        vaccount: `phoenix`
+      }
     });
+    process.exit(0);
   } catch (error) {
-    console.error(error);
+    // ignore
+    process.exit(1);
   }
-  process.exit(0);
 }
 
 action();

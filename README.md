@@ -52,10 +52,11 @@ Stake DAPP services: `accountless1` and `ipfsservic`.
 # phoenix init
 node actions/_stakedapp.js # with changes to account name
 node actions/_xvinit.js # with changes to account name
-node actions/init
 
 # phoenixtoken init
 node actions/create-issue
+node actions/init
+
 
 # create some vaccounts
 node actions/login.js

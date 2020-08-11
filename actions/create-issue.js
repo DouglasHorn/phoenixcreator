@@ -13,36 +13,35 @@ async function action() {
   try {
     await sendTransaction([
       // {
-    //   account: TOKEN_ACCOUNT,
-    //   name: `create`,
-    //   authorization: [
-    //     {
-    //       actor: TOKEN_ACCOUNT,
-    //       permission: `active`
-    //     }
-    //   ],
-    //   data: {
-    //     issuer: TOKEN_ACCOUNT,
-    //     maximum_supply: "170000000.000000000 WEOSDT"
-    //   }
-    // },
-    // issue to PHOENIX not needed 
-    {
-      account: TOKEN_ACCOUNT,
-      name: `issue`,
-      authorization: [
-        {
-          actor: TOKEN_ACCOUNT,
-          permission: `active`
+      //   account: TOKEN_ACCOUNT,
+      //   name: `create`,
+      //   authorization: [
+      //     {
+      //       actor: TOKEN_ACCOUNT,
+      //       permission: `active`,
+      //     },
+      //   ],
+      //   data: {
+      //     issuer: TOKEN_ACCOUNT,
+      //     maximum_supply: "170000000.000000000 WEOSDT",
+      //   },
+      // },
+      {
+        account: TOKEN_ACCOUNT,
+        name: `issue`,
+        authorization: [
+          {
+            actor: TOKEN_ACCOUNT,
+            permission: `active`
+          }
+        ],
+        data: {
+          to: `phoenix`,
+          quantity: "170000000.000000000 WEOSDT",
+          memo: "",
         }
-      ],
-      data: {
-        to: `phoenix`,
-        quantity: "170000000.000000000 WEOSDT",
-        memo: "",
-      }
-    },
-  ]);
+      },
+    ]);
     process.exit(0);
   } catch (error) {
     // ignore

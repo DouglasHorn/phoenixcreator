@@ -11,10 +11,10 @@ static constexpr name token_account = name("phoenixv2t11");
 static constexpr name dsp_name = eosio::name("airdropsdac1");
 
 #ifdef __TEST__
-static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
+static constexpr extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
                                                name("eosio.token")};
 #else
-static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
+static constexpr extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
                                                name("weosdttoken2")};
 #endif
 static constexpr symbol CHAIN_SYMBOL = eosio::symbol("EOS", 4);
@@ -28,7 +28,7 @@ static constexpr name phoenix_account = name("phoenixgroup");
 static constexpr name token_account = name("phoenixcreat");
 static constexpr name dsp_name = eosio::name("airdropsdac1");
 static constexpr symbol CHAIN_SYMBOL = eosio::symbol("WAX", 8);
-static const extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
+static constexpr extended_symbol WEOSDT_EXT_SYMBOL{symbol("WEOSDT", 9),
                                                name("weosdttokens")};
 static constexpr name FEES_ACCOUNT = name("waxmeetup111");
 #endif

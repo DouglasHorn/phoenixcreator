@@ -1,6 +1,5 @@
 #pragma once
 
-#define __TEST__
 #define USE_ADVANCED_IPFS
 // #define USE_IPFS_WARMUPROW
 

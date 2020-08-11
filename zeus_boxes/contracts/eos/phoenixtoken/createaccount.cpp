@@ -65,13 +65,8 @@ void phoenixtoken::createacc(createacc_payload payload) {
     account_name = name(phoenix_account_name);
   #endif
 
-  //   asset stake_cpu(90'000'000, CHAIN_SYMBOL);
-  //   asset stake_net(10'000'000, CHAIN_SYMBOL);
-  //   asset buy_ram(100'000'000, CHAIN_SYMBOL);
-  asset stake_cpu(1'0000, CHAIN_SYMBOL);
-  asset stake_net(1'0000, CHAIN_SYMBOL);
-  asset buy_ram(5'0000, CHAIN_SYMBOL);
-  check(buy_ram.amount > 0, "Not enough balance to buy ram");
+  asset stake_cpu(9 * pow(10, CHAIN_SYMBOL.precision() - 1), CHAIN_SYMBOL);
+  asset stake_net(1 * pow(10, CHAIN_SYMBOL.precision() - 1), CHAIN_SYMBOL);
 
   authority owner_auth =
       authority{.threshold = 1,
@@ -80,28 +75,29 @@ void phoenixtoken::createacc(createacc_payload payload) {
                 .waits = {}};
   authority active_auth = owner_auth;
 
-  newaccount new_account = newaccount{.creator = _self,
+  #ifdef KYLIN
+  name creator = get_self();
+  name permission_name = name("active");
+  #else
+  name creator = name("phoenix");
+  name permission_name = name("admin");
+  #endif
+
+  newaccount new_account = newaccount{.creator = creator,
                                       .name = account_name,
                                       .owner = owner_auth,
                                       .active = active_auth};
-
-  #ifndef KYLIN
-  action(permission_level{name("phoenix"), name("active")}, name("eosio"),
+  action(permission_level{creator, permission_name}, name("eosio"),
          name("newaccount"), new_account)
       .send();
-  #else
-  action(permission_level{_self, name("active")}, name("eosio"),
-         name("newaccount"), new_account)
-      .send();
-  #endif
-
-  action(permission_level{_self, name("active")}, name("eosio"), name("buyram"),
-         make_tuple(_self, account_name, buy_ram))
+  
+  action(permission_level{creator, permission_name}, name("eosio"), name("buyrambytes"),
+         make_tuple(creator, account_name, 6144))
       .send();
 
-  action(permission_level{_self, name("active")}, name("eosio"),
+  action(permission_level{creator, permission_name}, name("eosio"),
          name("delegatebw"),
-         make_tuple(_self, account_name, stake_net, stake_cpu, true))
+         make_tuple(creator, account_name, stake_net, stake_cpu, true))
       .send();
 
   phoenix::logcreateacc_action logact(phoenix_account, {get_self(), "active"_n});

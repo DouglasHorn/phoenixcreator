@@ -1,9 +1,9 @@
 #pragma once
 
 #define __TEST__
-#define __KYLIN__
+// #define __KYLIN__
 
-// #define LIQUIDX
+#define LIQUIDX
 
 #define USE_ADVANCED_IPFS
 // #define USE_IPFS_WARMUPROW

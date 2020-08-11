@@ -1,9 +1,9 @@
 #pragma once
 
 #define __TEST__
-#define __KYLIN__
+// #define __KYLIN__
 
-// #define LIQUIDX
+#define LIQUIDX
 
 #define USE_ADVANCED_IPFS
 // #define USE_IPFS_WARMUPROW
@@ -76,6 +76,9 @@ ACTION open(const name &owner, const symbol &symbol);
 ACTION withdrawv(withdrawv_payload payload);
 ACTION payoutfees(name to);
 ACTION createacc(createacc_payload payload);
+#ifdef __TEST__
+ACTION test(name vaccount);
+#endif
 void on_transfer(const eosio::name &from, const eosio::name &to,
                  const eosio::asset &quantity, const std::string &memo);
 

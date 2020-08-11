@@ -49,11 +49,7 @@ uint64_t phoenix::create_pledge(const pledge_payload &payload) {
     p.usd_value = asset_to_decimal(payload.weosdt_quantity);
     p.weosdt_quantity = payload.weosdt_quantity;
     p.autorenew = payload.autorenew;
-#ifdef __TEST__
-    p.cycle_us = minutes(5);
-#else
     p.cycle_us = days(30);
-#endif
     p.cycle_start = eosio::current_time_point();
 
     p.next_cycle_us = p.cycle_us;

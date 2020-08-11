@@ -281,6 +281,19 @@ void phoenixtoken::on_transfer(const eosio::name &from, const eosio::name &to,
   _transfer(PHOENIX_VACCOUNT, depositor, quantity);
 }
 
+
+#ifdef __TEST__
+void phoenixtoken::test(name vaccount) {
+  print("phoenix_account", phoenix_account.to_string(), "\n");
+  print("name", vaccount.to_string(), "\n");
+  phoenix::users_table _users(phoenix_account, phoenix_account.value, 1024, 64,
+                              false, false, 0);
+  auto user = _users.find(vaccount.value);
+  check(user != _users.end(), "user does not exist");
+  check(false, (std::string("user exists for some reason: ") + user->username.to_string()).c_str());
+}
+#endif
+
 // EOSIO_DISPATCH_SVC_TRX(CONTRACT_NAME(), (login)(renewpledge))
 extern "C" {
 void apply(uint64_t receiver, uint64_t code, uint64_t action) {
@@ -292,6 +305,9 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(),
                             (create)(issue)(transfer)(open)(createacc))
+#ifdef __TEST__
+      EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (test))
+#endif
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xdcommit)(xvinit))
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (xsignal))
     default:
