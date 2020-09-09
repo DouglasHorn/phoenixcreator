@@ -332,7 +332,7 @@ void phoenix::updatepost(updatepost_payload payload) {
     });
 
     post_key_enc_table _posts_keys(get_self(),
-                                   eosio::name("airdropsdac1").value, 1024, 64,
+                                   dsp_name.value, 1024, 64,
                                    false, false, VACCOUNTS_DELAYED_CLEANUP);
     auto existing_post_key = _posts_keys.find(payload.id);
     if (existing_post_key != _posts_keys.end()) {
@@ -357,7 +357,7 @@ void phoenix::updatepost(updatepost_payload payload) {
       check(payload.post_key.size() > 0,
             "encrypted posts require an encrypted post_key parameter");
       post_key_enc_table _posts_keys(
-          get_self(), eosio::name("airdropsdac1").value, 1024, 64, false, false,
+           get_self(), dsp_name.value, 1024, 64, false, false,
           VACCOUNTS_DELAYED_CLEANUP);
       auto existing_post_key = _posts_keys.find(payload.id);
       if (existing_post_key == _posts_keys.end()) {
@@ -438,7 +438,7 @@ void phoenix::linkaccount(linkaccount_payload payload) {
   const auto user = check_user(payload.vaccount);
 
   if (payload.account != ""_n) {
-    check(is_account(payload.account), "linked eos account does not exist");
+    check(is_account(payload.account), "linked chain account does not exist");
   }
 
   _users.modify(user, get_self(),

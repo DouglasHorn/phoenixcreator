@@ -219,12 +219,10 @@ asset phoenixtoken::get_balance(name owner, symbol sym) const {
 }
 
 void phoenixtoken::check_user(const name &name) {
-  print("phoenix_account", phoenix_account.to_string(), "\n");
-  print("name", name.to_string(), "\n");
   phoenix::users_table _users(phoenix_account, phoenix_account.value, 1024, 64,
                               false, false, 0);
   _users.get(name.value,
-             std::string("user does not exist" + name.to_string()).c_str());
+             std::string("user does not exist: " + name.to_string()).c_str());
 }
 
 void phoenixtoken::check_running() {
