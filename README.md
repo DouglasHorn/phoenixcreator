@@ -37,10 +37,12 @@ Please use your common sense. If you feel that something may be illegal, please 
 
 # Smart contracts
 
+> The smart contracts are open-source and can be found [here](./zeus_boxes/contracts/eos)
+
 The smart contracts for Phoenix are live on the [WAX blockchain](https://github.com/worldwide-asset-exchange/wax-blockchain) and are split into:
 
 1. [`phoenixgroup`](https://wax.bloks.io/account/phoenixgroup): The core contract handling signups, logins, post creation, etc.
-1. [`phoenixcreat`](https://wax.bloks.io/account/phoenixcreat): The token contract handling account balances and subscription payments
+2. [`phoenixcreat`](https://wax.bloks.io/account/phoenixcreat): The token contract handling account balances and subscription payments
 
 Phoenix makes use of various [**LiquidApps services**](https://liquidapps.io/) to scale the platform and onboard new users as easy as possible.
 
