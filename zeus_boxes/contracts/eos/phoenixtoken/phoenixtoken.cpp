@@ -302,7 +302,7 @@ void apply(uint64_t receiver, uint64_t code, uint64_t action) {
     switch (action) {
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), DAPPSERVICE_ACTIONS_COMMANDS())
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(),
-                            (create)(issue)(transfer)(open)(createacc))
+                            (create)(issue)(transfer)(open)(createacc)(payoutfees))
 #ifdef __TEST__
       EOSIO_DISPATCH_HELPER(CONTRACT_NAME(), (test))
 #endif
