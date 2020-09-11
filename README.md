@@ -305,6 +305,7 @@ node actions/transfer.js # distributes some virtual phoenix
 
 # Resources
 
+- [Introduction to PhoenixCreator.com: A Beginner’s guide to why creators should start a Phoenix page today](https://medium.com/@maltablock/introduction-to-phoenixcreator-com-8c9c0cf2d3e)
 - [phoenixcreator.com](https://phoenixcreator.com)
 - [Telegram](https://t.me/phoenixcreator)
 - [Twitter](https://twitter.com/phoenixcreator1)
