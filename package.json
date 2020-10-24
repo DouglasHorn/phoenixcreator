@@ -8,7 +8,9 @@
         "compile-xchain": "zeus compile phoenix --sidechain liquidxxxwax && zeus compile phoenixtoken --sidechain liquidxxxwax",
         "test": "mocha --require=dotenv/config --exit --timeout 1000000 --color",
         "preinstall": "",
-        "test-ci": "mocha --require=dotenv/config --exit --timeout 1000000 --reporter mocha-junit-and-console-reporter --reporter-options mochaFile=./test-reports/junit.xml --color"
+        "test-ci": "mocha --require=dotenv/config --exit --timeout 1000000 --reporter mocha-junit-and-console-reporter --reporter-options mochaFile=./test-reports/junit.xml --color",
+        "replay": "CONTRACT=phoenixgroup DSP_ENDPOINT='https://waxdsp.maltablock.org' SIDECHAIN='liquidxxxwax' SIDECHAIN_DSP_PORT=3117 NODEOS_MAINNET_ENDPOINT='http://10.101.130.213:8888' node zeus_boxes/ipfs-dapp-service/utils/ipfs-service/replay-contract-hyperion.js",
+        "dump": "CONTRACT=phoenixgroup node zeus_boxes/ipfs-dapp-service/utils/ipfs-service/dump-contract-hyperion.js"
     },
     "keywords": [],
     "author": "",

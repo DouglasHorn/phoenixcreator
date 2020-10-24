@@ -37,6 +37,14 @@ zeus_boxes/start-localenv/*
 zeus_boxes/liquidx/*
 !zeus_boxes/liquidx/models
 
+!zeus_boxes/ipfs-dapp-service
+zeus_boxes/ipfs-dapp-service/*
+!zeus_boxes/ipfs-dapp-service/utils
+zeus_boxes/ipfs-dapp-service/utils/ipfs-service/*
+!zeus_boxes/ipfs-dapp-service/utils/ipfs-service/replay-contract-hyperion.js
+!zeus_boxes/ipfs-dapp-service/utils/ipfs-service/dump-contract-hyperion.js
+
 *.sqlite
 logs/*
 eosiac.yml
+diagnostics/*.json
