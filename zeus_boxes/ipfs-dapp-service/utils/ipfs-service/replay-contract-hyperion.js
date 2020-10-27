@@ -26,7 +26,7 @@ var start = new Date();
 var passedTime;
 var speed;
 async function replay(hexData) {
-  console.log(`replay 1`)
+  // console.log(`replay 1`)
   if (hexData.length == 0) {
     return;
   }
@@ -50,11 +50,11 @@ async function replay(hexData) {
       name: sidechainName,
     };
   }
-  console.log(`replay 2`, meta)
+  // console.log(`replay 2`, meta)
   const dappservicesContract = sidechainName
     ? await getLinkedAccount(null, null, `dappservices`, sidechainName)
     : `dappservices`;
-  console.log(`replay dappservicesContract`, dappservicesContract)
+  // console.log(`replay dappservicesContract`, dappservicesContract)
 
   const actionName = sidechainName ? "usagex" : "usage";
   const body = {
@@ -103,10 +103,10 @@ async function replay(hexData) {
     },
     replay: true,
   };
-  console.log(`replay 3`)
+  // console.log(`replay 3`)
   var r = await fetch(url, { method: "POST", body: JSON.stringify(body) });
   await r.text();
-  console.log(`replay 4`)
+  // console.log(`replay 4`)
   totalSize += hexData.length / 2 + 320;
 
   if (++cnt % 5 == 0) {
@@ -149,7 +149,7 @@ async function run() {
       limit: LIMIT,
     });
     const url = `${hyperionEndpoint}/v2/history/get_deltas?${qs}`;
-    console.log(`fetching `, url);
+    // console.log(`fetching `, url);
     const response = await fetch(url).then((resp) => resp.json());
     const commits = response.deltas;
     skip += commits.length;
