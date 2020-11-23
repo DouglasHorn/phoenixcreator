@@ -22,8 +22,10 @@ async function action() {
         },
       ],
       data: {
-        vaccount: `tester1.phnx`,
-        pubkey: `EOS8Rf2CuK26Lj5Xfmc5x7xSupoidfJLt1HjDwuTJEWUWNj6Y9Qsb`,
+        // vaccount: `tester1.phnx`,
+        // pubkey: `EOS8Rf2CuK26Lj5Xfmc5x7xSupoidfJLt1HjDwuTJEWUWNj6Y9Qsb`,
+        vaccount: `payments`,
+        pubkey: `EOS7iPuc5YYBnBNLtuLnLNfoiyi3akA7LKU4JgEaU2jGsUPSGuUa9`,
         checksum: 0,
       },
     });

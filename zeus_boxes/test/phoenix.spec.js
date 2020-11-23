@@ -990,8 +990,10 @@ describe(`Phoenix tests`, () => {
           "renewpledge",
           {
             vaccount: pledge.from,
+            payer: pledge.from,
             to: pledge.to,
             pledge_id: 0,
+            expectd_usd_value: -1,
           }
         );
 
@@ -1137,8 +1139,10 @@ describe(`Phoenix tests`, () => {
           "renewpledge",
           {
             vaccount: vAccount1,
+            payer: vAccount1,
             to: vAccount3,
             pledge_id: 1,
+            expectd_usd_value: -1,
           }
         );
 

@@ -333,9 +333,11 @@ struct pledge_payload {
 
 struct renewpledge_payload {
   name vaccount;
+  name payer;
   name to;
   uint64_t pledge_id;
-  EOSLIB_SERIALIZE(renewpledge_payload, (vaccount)(to)(pledge_id))
+  double expected_usd_value;
+  EOSLIB_SERIALIZE(renewpledge_payload, (vaccount)(payer)(to)(pledge_id)(expected_usd_value))
 };
 
 struct timer_payload {

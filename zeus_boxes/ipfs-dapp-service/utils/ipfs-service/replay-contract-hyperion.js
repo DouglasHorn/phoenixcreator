@@ -106,7 +106,6 @@ async function replay(hexData) {
   // console.log(`replay 3`)
   var r = await fetch(url, { method: "POST", body: JSON.stringify(body) });
   await r.text();
-  // console.log(`replay 4`)
   totalSize += hexData.length / 2 + 320;
 
   if (++cnt % 5 == 0) {

@@ -143,9 +143,12 @@ void phoenix::renewpledge(renewpledge_payload payload) {
   check(pledge->to == payload.to, "wrong subscriber account");
   check(pledge->from == payload.vaccount, "you are not the sender of this pledge");
 
-  // if autorenew anyone can renew, otherwise require pledgers auth
-  if (!pledge->autorenew) {
-    require_vaccount(pledge->from);
+  // if autorenew anyone can call renew and let pledge creator pay
+  // otherwise require payers auth
+  if (pledge->autorenew && payload.vaccount == payload.payer) {
+    // don't require auth only in this case
+  } else {
+    require_vaccount(payload.payer);
   }
 
   const auto cycle_end = pledge->cycle_start + pledge->cycle_us;
@@ -158,13 +161,18 @@ void phoenix::renewpledge(renewpledge_payload payload) {
   // update pledge info from new cycle
   _pledges.modify(pledge, get_self(), [&](auto &p) {
     p.cycle_start = eosio::current_time_point();
+    p.cycle_us = p.next_cycle_us;
+    // update prices here
     p.usd_value = p.next_usd_value;
     p.weosdt_quantity = p.next_weosdt_quantity;
-    p.cycle_us = p.next_cycle_us;
-    p.cycle_us = p.next_cycle_us;
     p.paid = true;
+
+    if (payload.expected_usd_value > 0) {
+      // if someone else pays, they might want to check that they are not front-run by creator updating their pledge
+      check(fabs(payload.expected_usd_value - p.usd_value) < 0.01, "pledge value mismatch - was " + std::to_string(p.usd_value));
+    }
   });
-  pay_pledge(pledge->from, payload.pledge_id);
+  pay_pledge(payload.payer, payload.pledge_id);
 }
 
 
@@ -220,7 +228,7 @@ void phoenix::schedule_renewpledge(const pledge_info &pledge) {
       1;
 
   renewpledge_payload inner_payload =
-      renewpledge_payload{.vaccount = pledge.from, .to = pledge.to, .pledge_id = pledge.id};
+      renewpledge_payload{.vaccount = pledge.from, .to = pledge.to, .pledge_id = pledge.id, .payer= pledge.from, .expected_usd_value = -1.0};
   std::vector<char> packed_inner_payload = eosio::pack(inner_payload);
 
   timer_payload payload =
