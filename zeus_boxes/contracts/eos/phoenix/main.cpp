@@ -237,6 +237,7 @@ void phoenix::updatetiers(const updatetiers_payload &payload) {
 
   check(payload.new_tiers.size() <= 5, "cannot have more than 5 tiers");
   for (auto tier : payload.new_tiers) {
+    check(tier.usd_value >= 0.099, "subscription value must be at least 0.10$");
     check(tier.title.size() < 150, "title must be less than 150 chars");
     check(tier.description.size() <= 144,
           "description must be less than 144 chars");

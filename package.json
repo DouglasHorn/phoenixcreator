@@ -4,7 +4,7 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "compile": "zeus compile phoenix && zeus compile phoenixtoken",
+        "compile-no-xchain": "zeus compile phoenix && zeus compile phoenixtoken",
         "compile-xchain": "zeus compile phoenix --sidechain liquidxxxwax && zeus compile phoenixtoken --sidechain liquidxxxwax",
         "test": "mocha --require=dotenv/config --exit --timeout 1000000 --color",
         "preinstall": "",

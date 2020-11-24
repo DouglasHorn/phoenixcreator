@@ -48,3 +48,4 @@ zeus_boxes/ipfs-dapp-service/utils/ipfs-service/*
 logs/*
 eosiac.yml
 diagnostics/*.json
+!versions/*
