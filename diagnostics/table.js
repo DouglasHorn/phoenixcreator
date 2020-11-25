@@ -7,9 +7,11 @@ const { parseTable } = requireBox(
 );
 
 const ENDPOINT = `https://waxdsp.maltablock.org:443`;
+const CONTRACT_NAME = process.argv[process.argv.length - 2] || `phoenixgroup`;
 const TABLE_NAME = process.argv[process.argv.length - 1] || `users`;
+
 async function start() {
-  const data = await parseTable(`phoenixgroup`, TABLE_NAME, ENDPOINT, 1024);
+  const data = await parseTable(CONTRACT_NAME, TABLE_NAME, ENDPOINT, 1024);
   console.log(`Read ${data.length} users`);
 
   fs.writeFileSync(

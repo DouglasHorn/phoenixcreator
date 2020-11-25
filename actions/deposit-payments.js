@@ -1,4 +1,3 @@
-const { runTrx, readVRAMData, vAccounts } = require(`./_helpers`);
 const initEnvironment = require(`eosiac`);
 
 const { sendTransaction, env } = initEnvironment(
@@ -30,16 +29,16 @@ async function action() {
         data: {
           from: `cmichelonwax`,
           to: PHOENIXTOKEN_CONTRACT,
-          quantity: `1.000000000 WEOSDT`,
+          quantity: `9.000000000 WEOSDT`,
           memo: `deposit ${vAccount}`,
         }
       });
-      console.log(`${vAccount} balance:`, await readVRAMData({
-        contract: PHOENIX_CONTRACT,
-        key: `WEOSDT`,
-        table: `accounts`,
-        scope: vAccount
-      }));
+      // console.log(`${vAccount} balance:`, await readVRAMData({
+      //   contract: PHOENIX_CONTRACT,
+      //   key: `WEOSDT`,
+      //   table: `accounts`,
+      //   scope: vAccount
+      // }));
     } catch (error) {
       console.error(error);
     }
