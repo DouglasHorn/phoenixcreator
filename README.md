@@ -313,3 +313,5 @@ node actions/transfer.js # distributes some virtual phoenix
 # License
 
 [MIT licensed](./LICENSE).
+
+Forking this project to deploy on Telos.
